@@ -1,0 +1,118 @@
+name: Verify
+on:
+  push:
+    branches: [main, 'ci/**']
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  engine-and-ios:
+    runs-on: [self-hosted, macOS, ARM64, macbook-pro]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26.13.1'
+      - id: flutter-version
+        run: python3 -c 'from pathlib import Path; print("version=" + next(line.split()[1] for line in Path(".tool-versions").read_text().splitlines() if line.startswith("flutter ")))' >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          architecture: arm64
+          cache: true
+      - name: Check Dart formatting
+        working-directory: packages/receipt_print
+        run: dart format --output=none --set-exit-if-changed lib test example/lib example/test example/integration_test
+      - name: Check engine and bundle fixed-version native dependencies
+        run: >-
+          ./gradlew engineCheck bundleFlutterPlugin --console=plain
+          -Dorg.gradle.jvmargs='-Xmx2g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError'
+      - name: Check and extract the distribution ZIP
+        id: bundle
+        run: |
+          version=$(tr -d '\r\n' < packages/receipt_print/engine-version.txt)
+          archive="build/distributions/receipt-print-$version.zip"
+          python3 tools/verify_flutter_bundle.py "$archive" "$RUNNER_TEMP/receipt_print"
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+      - name: Check Dart package
+        working-directory: packages/receipt_print
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Check the example against the distribution
+        working-directory: ${{ runner.temp }}/receipt_print/example
+        run: flutter test
+      - name: Select iOS Simulator
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for ds in json.load(sys.stdin)["devices"].values() for d in ds if d["name"].startswith("iPhone")))')
+          if ! xcrun simctl list devices booted -j | python3 -c 'import json,sys; target=sys.argv[1]; sys.exit(0 if any(d["udid"] == target for ds in json.load(sys.stdin)["devices"].values() for d in ds) else 1)' "$device"; then
+            xcrun simctl boot "$device"
+          fi
+          xcrun simctl bootstatus "$device" -b
+          echo "IOS_DEVICE=$device" >> "$GITHUB_ENV"
+      - name: Check real iOS Channel
+        working-directory: ${{ runner.temp }}/receipt_print/example
+        run: |
+          flutter test integration_test/plugin_integration_test.dart -d "$IOS_DEVICE"
+          flutter build ios --simulator --debug --config-only
+          cd ios
+          xcodebuild test -project Runner.xcodeproj -scheme Runner -destination "platform=iOS Simulator,id=$IOS_DEVICE" -parallel-testing-enabled NO -only-testing:RunnerTests
+      - uses: actions/upload-artifact@v6
+        with:
+          name: receipt-print-${{ github.sha }}
+          path: ${{ steps.bundle.outputs.archive }}
+          if-no-files-found: error
+  android:
+    runs-on: [self-hosted, Linux, X64, nab-9s]
+    timeout-minutes: 45
+    steps:
+      - name: Check emulator acceleration
+        run: |
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+            echo '::error::The Android runner needs read and write access to /dev/kvm.'
+            exit 1
+          fi
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36'
+      - id: flutter-version
+        run: python3 -c 'from pathlib import Path; print("version=" + next(line.split()[1] for line in Path(".tool-versions").read_text().splitlines() if line.startswith("flutter ")))' >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+      - run: ./gradlew prepareFlutterAndroid --console=plain
+      - name: Build the Android APK and run JVM tests
+        working-directory: packages/receipt_print/example
+        run: |
+          flutter pub get
+          flutter build apk --debug --no-pub
+          cd android
+          ./gradlew :receipt_print:testDebugUnitTest --console=plain
+      - name: Check space for the Android image and emulator userdata
+        run: |
+          available=$(df -Pm "$HOME" | awk 'NR == 2 {print $4}')
+          if [ "${available:-0}" -lt 10240 ]; then
+            echo "Android verification needs 10240 MiB of free space before system image setup (available: ${available:-0} MiB)." >&2
+            exit 1
+          fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          working-directory: packages/receipt_print/example
+          script: flutter test --no-pub integration_test/plugin_integration_test.dart -d emulator-5554

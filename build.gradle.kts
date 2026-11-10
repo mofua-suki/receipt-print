@@ -1,0 +1,337 @@
+import groovy.json.JsonSlurper
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.compile.JavaCompile
+
+plugins {
+    alias(libs.plugins.kotlin.multiplatform) apply false
+}
+
+allprojects {
+    group = "receipt-kmp"
+    version = rootProject.providers.fileContents(
+        rootProject.layout.projectDirectory.file("packages/receipt_print/engine-version.txt"),
+    ).asText.get().trim()
+}
+
+subprojects {
+    plugins.withId("maven-publish") {
+        extensions.configure<PublishingExtension> {
+            repositories {
+                maven {
+                    name = "build"
+                    url = rootProject.layout.buildDirectory.dir("maven-repository").get().asFile.toURI()
+                }
+            }
+        }
+    }
+}
+
+tasks.register("validateCommandFixtures") {
+    group = "verification"
+    description = "Validates the printer command fixture schema."
+    val commandFixtures = layout.projectDirectory.dir("fixtures/commands")
+    inputs.dir(commandFixtures)
+
+    doLast {
+        fun requiredString(map: Map<*, *>, key: String, location: String): String =
+            (map[key] as? String)?.takeIf { it.isNotBlank() }
+                ?: error("$location.$key must be a non-blank string")
+
+        val fixtureFiles = commandFixtures.asFile
+            .walkTopDown()
+            .filter { file -> file.isFile && file.extension == "json" }
+            .toList()
+        check(fixtureFiles.isNotEmpty()) { "Command fixtures must not be empty" }
+
+        val fixtureIds = mutableSetOf<String>()
+        fixtureFiles.forEach { fixtureFile ->
+            val fixture = JsonSlurper().parse(fixtureFile) as? Map<*, *>
+                ?: error("Fixture ${fixtureFile.path} root must be an object")
+            val location = "Fixture ${fixtureFile.path}"
+            val schemaVersion = fixture["schemaVersion"] as? Number
+                ?: error("$location.schemaVersion must be a number")
+            check(schemaVersion.toDouble() == 1.0) { "$location.schemaVersion must be 1" }
+            val fixtureId = requiredString(fixture, "fixtureId", location)
+            check(fixtureIds.add(fixtureId)) { "Fixture id must be unique: $fixtureId" }
+
+            val printer = fixture["printer"] as? Map<*, *>
+                ?: error("$location.printer must be an object")
+            requiredString(printer, "profileId", "$location.printer")
+            val columnsPerLine = printer["columnsPerLine"] as? Number
+                ?: error("$location.printer.columnsPerLine must be a positive integer")
+            check(columnsPerLine.toInt() > 0 && columnsPerLine.toDouble() == columnsPerLine.toInt().toDouble()) {
+                "$location.printer.columnsPerLine must be a positive integer"
+            }
+
+            val commands = fixture["commands"] as? List<*>
+                ?: error("$location.commands must be an array")
+            check(commands.isNotEmpty()) { "$location.commands must not be empty" }
+            val operations = mutableSetOf<String>()
+            commands.forEachIndexed { index, rawCommand ->
+                val command = rawCommand as? Map<*, *>
+                    ?: error("$location.commands[$index] must be an object")
+                val commandLocation = "$location.commands[$index]"
+                val operation = requiredString(command, "operation", commandLocation)
+                check(operations.add(operation)) { "$location operation must be unique: $operation" }
+                val supported = if (command.containsKey("supported")) {
+                    command["supported"] as? Boolean
+                        ?: error("$commandLocation.supported must be a boolean")
+                } else {
+                    true
+                }
+                val bytesHex = command["bytesHex"] as? String
+                check(!supported || bytesHex != null) {
+                    "$commandLocation.bytesHex is required for supported commands"
+                }
+                if (!supported) {
+                    requiredString(command, "diagnosticCode", commandLocation)
+                }
+                bytesHex?.let { value ->
+                    check(value.length % 2 == 0 && value.matches(Regex("[0-9a-f]*"))) {
+                        "$commandLocation.bytesHex must be even-length lowercase hex"
+                    }
+                }
+                val repeatByteHex = command["repeatByteHex"]
+                val repeatCount = command["repeatCount"]
+                check((repeatByteHex == null) == (repeatCount == null)) {
+                    "$commandLocation repeatByteHex and repeatCount must be specified together"
+                }
+                if (repeatByteHex != null && repeatCount != null) {
+                    check(repeatByteHex is String && repeatByteHex.matches(Regex("[0-9a-f]{2}"))) {
+                        "$commandLocation.repeatByteHex must be one lowercase hex byte"
+                    }
+                    val count = repeatCount as? Number
+                        ?: error("$commandLocation.repeatCount must be a positive integer")
+                    check(count.toInt() > 0 && count.toDouble() == count.toInt().toDouble()) {
+                        "$commandLocation.repeatCount must be a positive integer"
+                    }
+                }
+                check(!supported || !bytesHex.isNullOrEmpty() || repeatCount != null) {
+                    "$commandLocation expected bytes must not be empty for supported commands"
+                }
+            }
+        }
+    }
+}
+
+val cp932GeneratorClasses = layout.buildDirectory.dir("cp932-generator/classes")
+val regeneratedCp932Table = layout.buildDirectory.file("cp932-generator/Cp932MappingTable.kt")
+
+val compileCp932TableGenerator by tasks.registering(JavaCompile::class) {
+    source(layout.projectDirectory.file("tools/GenerateCp932Table.java"))
+    destinationDirectory.set(cp932GeneratorClasses)
+    classpath = files()
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
+    options.release.set(17)
+}
+
+val generateCp932BootstrapTable by tasks.registering(JavaExec::class) {
+    dependsOn(compileCp932TableGenerator)
+    classpath = files(cp932GeneratorClasses)
+    mainClass.set("GenerateCp932Table")
+    args("--jdk-bootstrap", regeneratedCp932Table.get().asFile.absolutePath)
+    inputs.file(layout.projectDirectory.file("tools/GenerateCp932Table.java"))
+    outputs.file(regeneratedCp932Table)
+}
+
+tasks.register<JavaExec>("verifyCp932Table") {
+    group = "verification"
+    description = "Regenerates the JDK-bootstrap CP932 table and verifies an exact source match."
+    dependsOn(compileCp932TableGenerator)
+    val committedTable = layout.projectDirectory.file(
+        "receipt-core/src/commonMain/kotlin/receiptdsl/encoding/Cp932MappingTable.kt",
+    )
+    classpath = files(cp932GeneratorClasses)
+    mainClass.set("GenerateCp932Table")
+    args("--verify-jdk-bootstrap", committedTable.asFile.absolutePath)
+    inputs.file(layout.projectDirectory.file("tools/GenerateCp932Table.java"))
+    inputs.file(committedTable)
+}
+
+tasks.register("coreCheck") {
+    group = "verification"
+    description = "Runs core ABI, encoding fixture, JVM, and iOS Simulator checks."
+    dependsOn(
+        "validateCommandFixtures",
+        "verifyCp932Table",
+        ":receipt-core:checkKotlinAbi",
+        ":receipt-command-escpos:checkKotlinAbi",
+        ":receipt-command-star:checkKotlinAbi",
+        ":receipt-receiptline:checkKotlinAbi",
+        ":receipt-core:jvmTest",
+        ":receipt-core:iosSimulatorArm64Test",
+        ":receipt-command-escpos:jvmTest",
+        ":receipt-command-escpos:iosSimulatorArm64Test",
+        ":receipt-command-star:jvmTest",
+        ":receipt-command-star:iosSimulatorArm64Test",
+        ":receipt-receiptline:jvmTest",
+        ":receipt-receiptline:iosSimulatorArm64Test",
+    )
+}
+
+tasks.register("engineCheck") {
+    group = "verification"
+    description = "Runs every conversion-engine check and sample verification."
+    dependsOn(
+        "coreCheck",
+        "receiptLineSvgCheck",
+        ":receipt-engine:checkKotlinAbi",
+        ":receipt-engine:jvmTest",
+        ":receipt-engine:iosSimulatorArm64Test",
+        ":samples:kotlinApp:jvmTest",
+        ":receipt-engine:assembleReceiptPrintDebugXCFramework",
+        "swiftSampleCheck",
+    )
+}
+
+tasks.register<Exec>("swiftSampleCheck") {
+    group = "verification"
+    description = "Builds the Debug iOS Simulator framework and type-checks the Swift facade sample."
+    dependsOn(":receipt-engine:linkDebugFrameworkIosSimulatorArm64")
+
+    val frameworkDirectory = project(":receipt-engine").layout.buildDirectory.dir(
+        "bin/iosSimulatorArm64/debugFramework",
+    )
+    val sample = layout.projectDirectory.file("samples/iosApp/ReceiptEngineSample.swift")
+    val moduleCache = layout.buildDirectory.dir("swift-module-cache")
+    inputs.file(sample)
+    inputs.dir(frameworkDirectory)
+    commandLine(
+        "xcrun",
+        "--sdk",
+        "iphonesimulator",
+        "swiftc",
+        "-typecheck",
+        "-target",
+        "arm64-apple-ios13.0-simulator",
+        "-module-cache-path",
+        moduleCache.get().asFile.absolutePath,
+        "-F",
+        frameworkDirectory.get().asFile.absolutePath,
+        sample.asFile.absolutePath,
+    )
+}
+
+val receiptLineNpmInstall by tasks.registering(Exec::class) {
+    group = "build setup"
+    description = "Installs the pinned ReceiptLine preview dependency when it is not already present."
+    workingDir(layout.projectDirectory.dir("tools/receiptline"))
+    inputs.files(
+        layout.projectDirectory.file("tools/receiptline/package.json"),
+        layout.projectDirectory.file("tools/receiptline/package-lock.json"),
+    )
+    outputs.file(layout.projectDirectory.file("tools/receiptline/node_modules/receiptline/package.json"))
+    commandLine(
+        "npm",
+        "ci",
+        "--ignore-scripts",
+        "--cache",
+        layout.buildDirectory.dir("npm-cache").get().asFile.absolutePath,
+    )
+}
+
+tasks.register<Exec>("receiptLineSvgCheck") {
+    group = "verification"
+    description = "Regenerates ReceiptLine SVG in memory and compares it with the committed golden."
+    dependsOn(receiptLineNpmInstall)
+    workingDir(layout.projectDirectory.dir("tools/receiptline"))
+    inputs.files(
+        layout.projectDirectory.file("fixtures/previews/core-nodes.receiptline"),
+        layout.projectDirectory.file("fixtures/previews/core-nodes.svg"),
+        layout.projectDirectory.file("tools/receiptline/package-lock.json"),
+        layout.projectDirectory.file("tools/receiptline/receiptline-svg.mjs"),
+        layout.projectDirectory.file("tools/receiptline/verify-svg.mjs"),
+    )
+    commandLine(
+        "node",
+        "verify-svg.mjs",
+        "../../fixtures/previews/core-nodes.receiptline",
+        "../../fixtures/previews/core-nodes.svg",
+        "48",
+    )
+}
+
+tasks.register("publishAllToBuildRepository") {
+    group = "publishing"
+    description = "Publishes every KMP module to build/maven-repository without touching ~/.m2."
+    dependsOn(
+        ":receipt-core:publishAllPublicationsToBuildRepository",
+        ":receipt-command-escpos:publishAllPublicationsToBuildRepository",
+        ":receipt-command-star:publishAllPublicationsToBuildRepository",
+        ":receipt-receiptline:publishAllPublicationsToBuildRepository",
+        ":receipt-engine:publishAllPublicationsToBuildRepository",
+    )
+}
+
+tasks.register<Sync>("prepareFlutterAndroid") {
+    group = "build"
+    description = "Bundles JVM Maven artifacts for the Flutter Android plugin."
+    listOf("receipt-core", "receipt-command-escpos", "receipt-command-star", "receipt-receiptline", "receipt-engine")
+        .forEach {
+            dependsOn(":$it:publishJvmPublicationToBuildRepository")
+            dependsOn(":$it:publishKotlinMultiplatformPublicationToBuildRepository")
+        }
+    from(layout.buildDirectory.dir("maven-repository")) {
+        include("receipt-kmp/*/${project.version}/**")
+    }
+    into(layout.projectDirectory.dir("packages/receipt_print/android/maven"))
+}
+
+tasks.register<Sync>("prepareFlutterIos") {
+    group = "build"
+    description = "Bundles ReceiptPrint.xcframework for the Flutter iOS plugin."
+    dependsOn(":receipt-engine:assembleReceiptPrintReleaseXCFramework")
+    from(layout.projectDirectory.dir("receipt-engine/build/XCFrameworks/release"))
+    into(layout.projectDirectory.dir("packages/receipt_print/ios/Frameworks"))
+}
+
+tasks.register("prepareFlutterPlugin") {
+    group = "build"
+    description = "Prepares both native dependencies before using the Flutter package."
+    dependsOn("prepareFlutterAndroid", "prepareFlutterIos")
+}
+
+// KMP users can keep using engineCheck without installing Flutter.
+val flutterAnalyze by tasks.registering(Exec::class) {
+    group = "verification"
+    workingDir(layout.projectDirectory.dir("packages/receipt_print"))
+    commandLine("flutter", "analyze")
+}
+val flutterUnitTest by tasks.registering(Exec::class) {
+    group = "verification"
+    workingDir(layout.projectDirectory.dir("packages/receipt_print"))
+    commandLine("flutter", "test")
+    mustRunAfter(flutterAnalyze)
+}
+val flutterExampleTest by tasks.registering(Exec::class) {
+    group = "verification"
+    workingDir(layout.projectDirectory.dir("packages/receipt_print/example"))
+    commandLine("flutter", "test")
+    mustRunAfter(flutterUnitTest)
+}
+tasks.register("fullCheck") {
+    group = "verification"
+    description = "Runs engineCheck plus Flutter analysis, unit tests, and example widget tests; native Channel checks run in CI."
+    dependsOn("engineCheck", flutterAnalyze, flutterUnitTest, flutterExampleTest)
+}
+tasks.register<Zip>("bundleFlutterPlugin") {
+    group = "distribution"
+    description = "Bundles the Flutter package and both native dependencies under a fixed engine version."
+    dependsOn("prepareFlutterPlugin")
+    archiveBaseName.set("receipt-print")
+    archiveVersion.set(project.version.toString())
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+    from(layout.projectDirectory) {
+        include("LICENSE", "third_party/unicode/LICENSE.txt")
+    }
+    from(layout.projectDirectory.dir("packages/receipt_print")) {
+        include("lib/**", "android/src/**", "android/maven/**", "android/build.gradle.kts")
+        include("ios/Frameworks/**", "ios/receipt_print/**", "ios/receipt_print.podspec")
+        include("pubspec.yaml", "README.md", "engine-version.txt")
+    }
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
