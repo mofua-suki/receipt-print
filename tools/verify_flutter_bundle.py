@@ -27,6 +27,7 @@ def require_file(path):
 def verify_package(package, version):
     for path in (
         "LICENSE",
+        "CHANGELOG.md",
         "third_party/unicode/LICENSE.txt",
         "pubspec.yaml",
         "lib/receipt_print.dart",
