@@ -22,8 +22,10 @@ final class DiagnosticDto {
   final String code;
   final DiagnosticSeverityDto severity;
   final String message;
+
   /// Zero-based ticket index, or null for diagnostics affecting the job.
   final int? ticketIndex;
+
   /// Zero-based path to the node within the selected ticket.
   final List<int> childIndexes;
 }

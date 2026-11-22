@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 class ReceiptPreviewView extends StatelessWidget {
   /// SVG produced by the iOS receipt renderer.
   final String svg;
+
   /// Displays [svg] in a scrollable native view on iOS.
   const ReceiptPreviewView({super.key, required this.svg});
   @override

@@ -98,6 +98,7 @@ enum CompatibilityModeDto {
 /// Base type for the nodes that make up a receipt.
 sealed class PrintNodeDto {
   const PrintNodeDto();
+
   /// Encodes this node for the native platform channel.
   Map<String, Object?> toMap();
 }
@@ -112,8 +113,10 @@ final class PrintJobDto {
 
   /// Tickets in the order supplied to the engine.
   final List<TicketDto> tickets;
+
   /// Requested direction for the whole job.
   final PrintDirectionDto direction;
+
   /// Actions requested before any ticket is printed.
   final List<JobActionDto> startActions;
 
@@ -129,6 +132,7 @@ final class TicketDto {
   const TicketDto({required this.children, this.cut = CutModeDto.partial});
 
   final List<PrintNodeDto> children;
+
   /// Cut request applied after this ticket.
   final CutModeDto cut;
 
@@ -165,8 +169,10 @@ final class TextDto extends PrintNodeDto {
 
   final String value;
   final TextStyleDto? style;
+
   /// Wrap policy used when text exceeds the printable width.
   final WrapModeDto wrap;
+
   /// Whether explicit newlines in [value] are preserved.
   final bool preserveNewLines;
 
@@ -193,11 +199,13 @@ final class TwoColumnDto extends PrintNodeDto {
 
   /// The text run at the leading edge of the row.
   final TextRunDto leading;
+
   /// Optional text run at the trailing edge of the row.
   final TextRunDto? trailing;
   final int? widthColumns;
   final int? leadingReservedColumns;
   final int? trailingReservedColumns;
+
   /// Policy applied when the two text runs do not fit on one line.
   final TwoColumnOverflowDto overflow;
 
@@ -303,11 +311,14 @@ final class PrinterProfileDto {
   });
 
   final PrinterModelDto model;
+
   /// Printable width in CP932 columns for the configured paper and printer.
   final int columnsPerLine;
+
   /// Determines whether the engine may substitute unsupported features.
   final CompatibilityModeDto compatibilityMode;
   final bool soundEnabled;
+
   /// Whether the optional external buzzer is configured on a TM-m30.
   final bool optionalExternalBuzzerEnabled;
 
