@@ -1,4 +1,4 @@
-# receipt_print
+# Receipt Print
 
 汎用印刷ツリーからサーマルプリンター向けコマンドと ReceiptLine プレビューを生成する Flutter プラグインです。
 変換処理は、このリポジトリの Kotlin Multiplatform `ReceiptEngine` を利用します。
@@ -16,7 +16,17 @@ Web、macOS、Windows、Linux と Intel Mac の iOS Simulator は対象外です
 iOS アプリの Runner ターゲットの Minimum Deployments を 15.0 以上に設定してください。
 CocoaPods を使うアプリでは、`Podfile` にも `platform :ios, '15.0'` を指定します。
 
-## 利用準備
+## インストール
+
+Flutter アプリのルートで実行します。
+
+```shell
+flutter pub add receipt_print
+```
+
+pub.dev からインストールしたパッケージには Android の Maven 成果物と iOS の XCFramework が同梱されています。
+
+## ソースから利用する場合
 
 リポジトリのルートで実行します。
 iOS 向け配布物の生成には macOS と Xcode が必要です。
@@ -32,7 +42,7 @@ Maven のバージョンは `engine-version.txt` で固定し、Android と KMP 
 配布する内容を変更するときは、このファイルのバージョンを上げて全成果物を再生成してください。
 `./gradlew bundleFlutterPlugin` は両 OS の配布物を含む ZIP を `build/distributions` に生成します。
 CI は検証したコミットの ZIP を保存します。
-公開レジストリへの登録は未実施です。Receipt Print の独自コードは Apache License 2.0 で公開しています。配布 ZIP には本プロジェクトの LICENSE と、同梱する Unicode および ReceiptLine のライセンスを含めています。
+Receipt Print の独自コードは Apache License 2.0 で公開しています。配布 ZIP には本プロジェクトの LICENSE と、同梱する Unicode および ReceiptLine のライセンスを含めています。
 
 利用側の `pubspec.yaml` に追加し、`flutter pub get` を実行します。
 パスは利用側プロジェクトからの相対パスです。
@@ -43,9 +53,9 @@ dependencies:
     path: ../receipt-print/packages/receipt_print
 ```
 
-現在はローカルパッケージとして利用します。
 Git 依存として取得する場合も、取得先にネイティブ配布物を準備する必要があります。
-`publish_to: none` としており、公開レジストリへの配布設定は含みません。
+
+## Android のリポジトリ設定
 
 Android の依存解決でプロジェクト側のリポジトリを禁止している場合は、利用側の `settings.gradle.kts` の `dependencyResolutionManagement.repositories` に、このパッケージの `android/maven` を追加してください。
 `receipt-kmp` グループの JVM ライブラリをこの場所から解決します。
