@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
   s.summary = 'Receipt command and preview conversion using the KMP receipt-print engine.'
   s.description = 'Converts generic print trees into printer commands and ReceiptLine previews using the KMP engine. Printer transport is owned by the caller.'
   s.homepage = 'https://github.com/mofua-suki/receipt-print'
-  s.license = { :type => 'UNLICENSED' }
+  s.license = { :type => 'Apache-2.0' }
   s.author = 'receipt-print contributors'
   s.source = { :path => '.' }
   s.source_files = 'receipt_print/Sources/receipt_print/**/*.swift'

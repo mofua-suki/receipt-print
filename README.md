@@ -1,4 +1,4 @@
-# receipt-print
+# Receipt Print
 
 `receipt-print` は、呼び出し元が構築した汎用印刷ツリーをサーマルプリンター向けコマンド、または ReceiptLine プレビューへ変換する Kotlin Multiplatform ライブラリです。
 
@@ -75,7 +75,7 @@ Swift 向け XCFramework は次のコマンドで `receipt-engine/build/XCFramew
 
 ## Flutter からの利用
 
-Flutter アプリは Dart API を使います。導入、ネイティブ配布物の生成、対応環境は[Flutter パッケージの README](packages/receipt_print/README.md)を参照してください。iOS では印刷ツリーから[紙面プレビュー](packages/receipt_print/README.md#紙面プレビュー)を表示できます。Kotlin と Swift からは `ReceiptEngine` を直接使えます。
+Flutter アプリでは `flutter pub add receipt_print` でインストールできます。導入、ネイティブ配布物の生成、対応環境は[Flutter パッケージの README](packages/receipt_print/README.md)を参照してください。iOS では印刷ツリーから[紙面プレビュー](packages/receipt_print/README.md#紙面プレビュー)を表示できます。Kotlin と Swift からは `ReceiptEngine` を直接使えます。
 
 ## 固定バージョンの配布物
 
@@ -86,7 +86,7 @@ Flutter アプリは Dart API を使います。導入、ネイティブ配布�
 `packages/receipt_print/engine-version.txt` は KMP と Android 依存の共通バージョンです。配布する実装を変更する際は、この値を更新してから ZIP を作り直してください。
 コマンドは Dart API、Android Maven 成果物、iOS XCFramework を含む `build/distributions/receipt-print-<version>.zip` を生成します。
 GitHub Actions は ZIP を展開して同梱物を確認し、展開したパッケージを使って Flutter サンプルと iOS Channel を検証します。検証に使った ZIP を、コミット SHA を含む成果物名で保存します。
-公開レジストリへの登録は未実施です。
+Flutter プラグインの pub.dev パッケージ名は `receipt_print` です。
 
 ## ライセンス
 
