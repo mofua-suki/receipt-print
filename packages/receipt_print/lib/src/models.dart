@@ -1,6 +1,7 @@
 /// Input models corresponding to the public Kotlin receipt-engine DTOs.
 library;
 
+/// Direction in which the printer outputs a receipt.
 enum PrintDirectionDto {
   normal('Normal'),
   reverse('Reverse');
@@ -9,6 +10,7 @@ enum PrintDirectionDto {
   final String wireValue;
 }
 
+/// An optional action to perform before printing the tickets.
 enum JobActionDto {
   playSound('PlaySound');
 
@@ -16,6 +18,7 @@ enum JobActionDto {
   final String wireValue;
 }
 
+/// Paper-cut behavior after a ticket.
 enum CutModeDto {
   none('None'),
   full('Full'),
@@ -26,6 +29,7 @@ enum CutModeDto {
   final String wireValue;
 }
 
+/// Horizontal alignment within the current printable width.
 enum TextAlignDto {
   left('Left'),
   center('Center'),
@@ -35,6 +39,7 @@ enum TextAlignDto {
   final String wireValue;
 }
 
+/// How text wraps when it exceeds the available columns.
 enum WrapModeDto {
   none('None'),
   character('Character'),
@@ -44,6 +49,7 @@ enum WrapModeDto {
   final String wireValue;
 }
 
+/// How to handle a row whose text exceeds the reserved columns.
 enum TwoColumnOverflowDto {
   wrapLeadingThenTrailing('WrapLeadingThenTrailing'),
   trailingOnNextLine('TrailingOnNextLine'),
@@ -56,6 +62,7 @@ enum TwoColumnOverflowDto {
   final String wireValue;
 }
 
+/// QR error correction level requested from the printer.
 enum QrErrorCorrectionDto {
   low('Low'),
   medium('Medium'),
@@ -66,6 +73,7 @@ enum QrErrorCorrectionDto {
   final String wireValue;
 }
 
+/// A printer model supported by the native receipt engine.
 enum PrinterModelDto {
   starFvp10('StarFvp10'),
   epsonTmT90Kp('EpsonTmT90Kp'),
@@ -78,6 +86,7 @@ enum PrinterModelDto {
   final String wireValue;
 }
 
+/// Whether the engine may approximate unsupported layout features.
 enum CompatibilityModeDto {
   strict('Strict'),
   compatibility('Compatibility');
@@ -86,11 +95,15 @@ enum CompatibilityModeDto {
   final String wireValue;
 }
 
+/// Base type for the nodes that make up a receipt.
 sealed class PrintNodeDto {
   const PrintNodeDto();
+
+  /// Encodes this node for the native platform channel.
   Map<String, Object?> toMap();
 }
 
+/// A print job containing one or more tickets and optional startup actions.
 final class PrintJobDto {
   const PrintJobDto({
     required this.tickets,
@@ -98,8 +111,13 @@ final class PrintJobDto {
     this.startActions = const [],
   });
 
+  /// Tickets in the order supplied to the engine.
   final List<TicketDto> tickets;
+
+  /// Requested direction for the whole job.
   final PrintDirectionDto direction;
+
+  /// Actions requested before any ticket is printed.
   final List<JobActionDto> startActions;
 
   Map<String, Object?> toMap() => {
@@ -109,10 +127,13 @@ final class PrintJobDto {
   };
 }
 
+/// A sequence of receipt nodes followed by a paper-cut request.
 final class TicketDto {
   const TicketDto({required this.children, this.cut = CutModeDto.partial});
 
   final List<PrintNodeDto> children;
+
+  /// Cut request applied after this ticket.
   final CutModeDto cut;
 
   Map<String, Object?> toMap() => {
@@ -121,7 +142,9 @@ final class TicketDto {
   };
 }
 
+/// A vertical group of child nodes with an optional inherited text style.
 final class ColumnDto extends PrintNodeDto {
+  /// Groups [children] using [style] as the inherited text style, if provided.
   const ColumnDto({required this.children, this.style});
 
   final List<PrintNodeDto> children;
@@ -135,6 +158,7 @@ final class ColumnDto extends PrintNodeDto {
   };
 }
 
+/// A block of styled text with explicit wrapping and newline behavior.
 final class TextDto extends PrintNodeDto {
   const TextDto({
     required this.value,
@@ -145,7 +169,11 @@ final class TextDto extends PrintNodeDto {
 
   final String value;
   final TextStyleDto? style;
+
+  /// Wrap policy used when text exceeds the printable width.
   final WrapModeDto wrap;
+
+  /// Whether explicit newlines in [value] are preserved.
   final bool preserveNewLines;
 
   @override
@@ -158,6 +186,7 @@ final class TextDto extends PrintNodeDto {
   };
 }
 
+/// A row with leading text and an optional trailing value, such as a price.
 final class TwoColumnDto extends PrintNodeDto {
   const TwoColumnDto({
     required this.leading,
@@ -168,11 +197,16 @@ final class TwoColumnDto extends PrintNodeDto {
     this.overflow = TwoColumnOverflowDto.wrapLeadingThenTrailing,
   });
 
+  /// The text run at the leading edge of the row.
   final TextRunDto leading;
+
+  /// Optional text run at the trailing edge of the row.
   final TextRunDto? trailing;
   final int? widthColumns;
   final int? leadingReservedColumns;
   final int? trailingReservedColumns;
+
+  /// Policy applied when the two text runs do not fit on one line.
   final TwoColumnOverflowDto overflow;
 
   @override
@@ -187,6 +221,7 @@ final class TwoColumnDto extends PrintNodeDto {
   };
 }
 
+/// A horizontal rule spanning the printable width.
 final class RuleDto extends PrintNodeDto {
   const RuleDto({this.thickness = 1});
 
@@ -196,6 +231,7 @@ final class RuleDto extends PrintNodeDto {
   Map<String, Object?> toMap() => {'type': 'rule', 'thickness': thickness};
 }
 
+/// A QR code with configurable size, error correction, and alignment.
 final class QrCodeDto extends PrintNodeDto {
   const QrCodeDto({
     required this.data,
@@ -219,6 +255,7 @@ final class QrCodeDto extends PrintNodeDto {
   };
 }
 
+/// Requests [lines] blank lines of paper feed.
 final class FeedDto extends PrintNodeDto {
   const FeedDto({this.lines = 1});
 
@@ -228,6 +265,7 @@ final class FeedDto extends PrintNodeDto {
   Map<String, Object?> toMap() => {'type': 'feed', 'lines': lines};
 }
 
+/// A fragment of text with an optional style override.
 final class TextRunDto {
   const TextRunDto({required this.value, this.style});
 
@@ -237,6 +275,7 @@ final class TextRunDto {
   Map<String, Object?> toMap() => {'value': value, 'style': style?.toMap()};
 }
 
+/// Text scaling, emphasis, inversion, and alignment for a node or run.
 final class TextStyleDto {
   const TextStyleDto({
     this.widthScale = 1,
@@ -261,6 +300,7 @@ final class TextStyleDto {
   };
 }
 
+/// Selects the printer and sets layout and compatibility options for a job.
 final class PrinterProfileDto {
   const PrinterProfileDto({
     required this.model,
@@ -271,9 +311,15 @@ final class PrinterProfileDto {
   });
 
   final PrinterModelDto model;
+
+  /// Printable width in CP932 columns for the configured paper and printer.
   final int columnsPerLine;
+
+  /// Determines whether the engine may substitute unsupported features.
   final CompatibilityModeDto compatibilityMode;
   final bool soundEnabled;
+
+  /// Whether the optional external buzzer is configured on a TM-m30.
   final bool optionalExternalBuzzerEnabled;
 
   Map<String, Object?> toMap() => {

@@ -75,7 +75,7 @@ Swift 向け XCFramework は次のコマンドで `receipt-engine/build/XCFramew
 
 ## Flutter からの利用
 
-Flutter アプリでは `flutter pub add receipt_print` でインストールできます。導入、ネイティブ配布物の生成、対応環境は[Flutter パッケージの README](packages/receipt_print/README.md)を参照してください。iOS では印刷ツリーから[紙面プレビュー](packages/receipt_print/README.md#紙面プレビュー)を表示できます。Kotlin と Swift からは `ReceiptEngine` を直接使えます。
+Flutter アプリでは `flutter pub add receipt_print` でインストールできます。導入、ネイティブ配布物の生成、対応環境は[Flutter パッケージの日本語 README](packages/receipt_print/README.ja.md)を参照してください。iOS では印刷ツリーから[紙面プレビュー](packages/receipt_print/README.ja.md#紙面プレビュー)を表示できます。Kotlin と Swift からは `ReceiptEngine` を直接使えます。
 
 ## 固定バージョンの配布物
 

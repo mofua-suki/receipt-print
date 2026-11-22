@@ -330,7 +330,8 @@ tasks.register<Zip>("bundleFlutterPlugin") {
     from(layout.projectDirectory.dir("packages/receipt_print")) {
         include("lib/**", "android/src/**", "android/maven/**", "android/build.gradle.kts")
         include("ios/Frameworks/**", "ios/receipt_print/**", "ios/receipt_print.podspec")
-        include("pubspec.yaml", "README.md", "CHANGELOG.md", "engine-version.txt")
+        include("pubspec.yaml", "README.md", "README.ja.md", "CHANGELOG.md", "engine-version.txt")
+        include("example/README.md", "example/pubspec.yaml", "example/lib/main.dart")
     }
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true

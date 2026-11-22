@@ -28,6 +28,11 @@ def verify_package(package, version):
     for path in (
         "LICENSE",
         "CHANGELOG.md",
+        "README.md",
+        "README.ja.md",
+        "example/README.md",
+        "example/pubspec.yaml",
+        "example/lib/main.dart",
         "third_party/unicode/LICENSE.txt",
         "pubspec.yaml",
         "lib/receipt_print.dart",
