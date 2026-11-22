@@ -6,7 +6,9 @@ import 'package:flutter/widgets.dart';
 /// Renders the generated SVG with native SVG text/filter support and local scrolling.
 /// The view does not load scripts or remote resources.
 class ReceiptPreviewView extends StatelessWidget {
+  /// SVG produced by the iOS receipt renderer.
   final String svg;
+  /// Displays [svg] in a scrollable native view on iOS.
   const ReceiptPreviewView({super.key, required this.svg});
   @override
   Widget build(BuildContext context) {

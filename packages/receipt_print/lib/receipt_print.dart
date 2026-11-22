@@ -1,3 +1,6 @@
+/// Flutter API for receipt compilation and platform previews.
+library;
+
 import 'package:flutter/services.dart';
 
 import 'src/models.dart';
@@ -36,6 +39,7 @@ final class ReceiptPrint {
     return svg;
   }
 
+  /// Compiles [job] for [printer] into bytes and validation diagnostics.
   Future<CompileResponseDto> compile({
     required PrintJobDto job,
     required PrinterProfileDto printer,
@@ -44,6 +48,7 @@ final class ReceiptPrint {
     return CompileResponseDto.fromMap(response);
   }
 
+  /// Converts [job] to ReceiptLine for [printer] and reports approximations.
   Future<PreviewResponseDto> preview({
     required PrintJobDto job,
     required PrinterProfileDto printer,
