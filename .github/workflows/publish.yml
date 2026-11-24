@@ -1,0 +1,102 @@
+name: Publish receipt_print to pub.dev
+
+on:
+  push:
+    tags:
+      - 'receipt_print-v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  package:
+    runs-on: [self-hosted, macOS, ARM64, macbook-pro]
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Check the release tag
+        shell: bash
+        run: |
+          version=$(awk '$1 == "version:" { print $2 }' packages/receipt_print/pubspec.yaml)
+          if [[ "$GITHUB_REF_NAME" != "receipt_print-v$version" ]]; then
+            echo "::error::The release tag must match version $version in packages/receipt_print/pubspec.yaml."
+            exit 1
+          fi
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '26.13.1'
+      - id: flutter-version
+        shell: bash
+        run: |
+          python3 -c 'from pathlib import Path; print("version=" + next(line.split()[1] for line in Path(".tool-versions").read_text().splitlines() if line.startswith("flutter ")))' >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          architecture: arm64
+          cache: true
+
+      - name: Build the Flutter plugin bundle
+        run: >-
+          ./gradlew bundleFlutterPlugin --console=plain
+          -Dorg.gradle.jvmargs='-Xmx2g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError'
+
+      - name: Stage the Flutter package
+        shell: bash
+        run: |
+          engine_version=$(tr -d '\r\n' < packages/receipt_print/engine-version.txt)
+          python3 -m zipfile -e "build/distributions/receipt-print-$engine_version.zip" "$RUNNER_TEMP/pub-package"
+
+      - name: Check the package with Flutter
+        working-directory: ${{ runner.temp }}/pub-package
+        run: flutter pub publish --dry-run
+
+      - uses: dart-lang/setup-dart@2286a0c042b44434fe26d292bbce8d34f7ec662b # v1
+        with:
+          sdk: '3.14.1'
+
+      - name: Verify native dependencies in the publication archive
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/receipt_print.tar.gz"
+          verified="$RUNNER_TEMP/verified-package"
+          dart pub publish --to-archive="$archive" --skip-validation --directory="$RUNNER_TEMP/pub-package"
+          mkdir "$verified"
+          tar -xzf "$archive" -C "$verified"
+          python3 - "$verified" <<'PY'
+          import sys
+          from pathlib import Path
+          from tools.verify_flutter_bundle import verify_package
+
+          engine_version = Path("packages/receipt_print/engine-version.txt").read_text(encoding="utf-8").strip()
+          verify_package(Path(sys.argv[1]), engine_version)
+          PY
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: receipt-print-package
+          path: ${{ runner.temp }}/receipt_print.tar.gz
+          if-no-files-found: error
+
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+    steps:
+      - uses: dart-lang/setup-dart@2286a0c042b44434fe26d292bbce8d34f7ec662b # v1
+        with:
+          sdk: '3.14.1'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: receipt-print-package
+          path: ${{ runner.temp }}
+      - name: Publish the verified archive
+        run: dart pub publish --from-archive="$RUNNER_TEMP/receipt_print.tar.gz" --force
