@@ -104,6 +104,8 @@ Dart のモデルで渡す整数は、Kotlin の `Int` と同じ符号付き 32 
 QR プレビューには印字可能な ASCII を指定します。データの上限は適用される誤り訂正レベルごとに L が 2953、M が 2331、Q が 1663、H が 1273 バイトです。Compatibility では ESC/POS 機が M、Star 機が Q を使います。上限を超えるとプレビューは `INVALID_LAYOUT` を返します。
 `CutModeDto.none` のチケット間に空行を入れるには `FeedDto()` を指定します。
 
+`compile()` の成功は印刷コマンドを生成できたことを示します。QR の機種ごとの上限とプレビューの容量は別途確認してください。Star 機の `RuleDto` は機種プロファイルの印字幅（現行は 576 ドット）を使い、`columnsPerLine` を変えても罫線の印字幅は変わりません。
+
 コンパイルが成功すると、`bytes` を読むたびに新しい `Uint8List` を取得できます。送信用に書き換えた後も、元のコマンドを再取得できます。
 
 変換が成功すると `isSuccess` が `true` になります。
@@ -188,6 +190,8 @@ Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
 
 SVG は iOS の JavaScriptCore または Android のオフライン描画用 WebView で生成します。ReceiptLine 4.0.1 の `lib/receiptline.js` は改行を LF にそろえ、付属のライセンスとともに同梱しています。
 プレビューではローカルのフォントを使います。表示用 WebView のスクリプト、外部リソース、外部への遷移は無効です。
+
+両 OS とも、QR のセル幅を 1 ドットにしても収まらない場合など、ReceiptLine が入力を描画できないとき、`renderSvg()` はコードが `invalid_arguments` の `PlatformException` を投げます。Android の WebView 初期化失敗、描画中の破棄、タイムアウトは `engine_error` になります。
 
 `renderSvg()` は「塚」などのCJK互換漢字を保持し、結合文字列にはNFCを適用します。外部描画器では正規化の違いで字形が変わる場合があります。
 

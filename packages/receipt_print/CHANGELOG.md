@@ -1,5 +1,7 @@
 ## 0.1.7
 
+- Match iOS by reporting `invalid_arguments` when ReceiptLine cannot render input on Android. WebView failures still report `engine_error`.
+- Document Star rule widths and the separate QR constraints for printing and preview.
 - Preserve printed text width (up to 6×) when approximating asymmetric scales in ReceiptLine previews, so tall text fits the same line as in print.
 - Render ReceiptLine SVGs and display the native receipt preview on Android.
 
