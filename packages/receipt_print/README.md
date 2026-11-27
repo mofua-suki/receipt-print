@@ -63,6 +63,8 @@ Use `ColumnDto` to nest nodes. Child lists use Dart's `List<PrintNodeDto>`. DTO 
 For a QR preview, use printable ASCII. The maximum payload in bytes depends on the effective error correction level (L 2953, M 2331, Q 1663, H 1273). Compatibility mode uses M for ESC/POS models and Q for Star models. An oversized preview returns `INVALID_LAYOUT`.
 Use `FeedDto()` for a blank line between tickets with `CutModeDto.none`.
 
+Each read of a successful compile result’s `bytes` returns a fresh `Uint8List`. You can modify it before sending and read the original commands again.
+
 Both calls can return output alongside warnings. If receipt validation fails, the output is null. Use `ticketIndex` and `childIndexes` to find the affected node. Invalid platform-channel calls can throw a `PlatformException`.
 
 The supported models are Epson TM-m30 and TM-T90KP, Star FVP10, TSP650II and mC-Print3, and Seiko Instruments RP-F10. Set `columnsPerLine` to the width for the chosen printer and paper. The engine uses CP932 column widths. On a TM-m30, set `optionalExternalBuzzerEnabled` only if a compatible external buzzer is configured.
@@ -89,7 +91,9 @@ Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
 
 The iOS renderer uses JavaScriptCore with the bundled ReceiptLine 4.0.1 script and license (LF line endings). The preview uses local fonts and disables WebView scripts, external resources and external navigation. SVG rendering is available only on iOS.
 
-The bundled script has two local changes. `renderSvg()` preserves CJK compatibility ideographs such as 塚 in text while composing combining sequences. For QR codes it uses the largest whole-dot cell size up to the requested size that fits the drawing area. Rendering fails when the QR matrix cannot be generated or one dot per module cannot fit. `preview()` returns the original ReceiptLine text and effective QR settings. External renderers apply their own Unicode normalization and sizing, so their output can differ from the bundled SVG. Printer commands retain the configured QR size.
+`renderSvg()` preserves CJK compatibility ideographs such as 塚 while composing combining sequences. External renderers may normalize text differently.
+
+`preview()` exports the effective QR cell size after printer settings are applied, up to 8 dots. At 1 or 2 dots it preserves the size and reports `PREVIEW_APPROXIMATION` because standard ReceiptLine 4.0.1 renderers use a minimum of 3. Effective sizes above 8 are exported as 8 with the same warning. The bundled iOS SVG uses the exported size, reducing it only as needed to fit a whole number of dots per module. Rendering fails if the matrix cannot be generated or a one-dot module cannot fit. Printing uses the printer’s effective size.
 
 ## Run the example or build from source
 

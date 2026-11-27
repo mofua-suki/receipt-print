@@ -146,6 +146,38 @@ void main() {
     );
   });
 
+  testWidgets('small QR cells survive compilation, export and iOS rendering', (
+    tester,
+  ) async {
+    const printer = PrinterProfileDto(model: PrinterModelDto.epsonTmM30);
+    for (final cell in [1, 2]) {
+      final job = PrintJobDto(
+        tickets: [
+          TicketDto(
+            children: [QrCodeDto(data: 'A', cellSize: cell)],
+            cut: CutModeDto.none,
+          ),
+        ],
+      );
+      final printed = await engine.compile(job: job, printer: printer);
+      final hex = printed.bytes!
+          .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+          .join();
+      expect(hex, contains('1d286b030031430$cell'));
+      final preview = await engine.preview(job: job, printer: printer);
+      final text = preview.receiptLine!;
+      expect(text, contains('option:qrcode,$cell,m'));
+      expect(
+        preview.diagnostics.map((d) => d.code),
+        contains('PREVIEW_APPROXIMATION'),
+      );
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final svg = await engine.renderSvg(text, columns: 48);
+        expect(svg, contains('<path d="M0,0l$cell,0 0,$cell'));
+      }
+    }
+  });
+
   testWidgets('the native channel preserves all six printer models', (
     tester,
   ) async {

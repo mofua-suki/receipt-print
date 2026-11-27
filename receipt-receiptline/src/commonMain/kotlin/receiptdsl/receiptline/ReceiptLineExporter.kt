@@ -186,8 +186,10 @@ public object DefaultReceiptLineExporter : ReceiptLineExporter {
             )
             return
         }
-        val cellSize = qrCode.cellSize.coerceIn(MIN_PREVIEW_QR_CELL_SIZE, MAX_PREVIEW_QR_CELL_SIZE)
-        if (cellSize != qrCode.cellSize) diagnostics += PreviewApproximation("QR cell size ${qrCode.cellSize}", qrCode.path)
+        val cellSize = qrCode.cellSize.coerceAtMost(MAX_PREVIEW_QR_CELL_SIZE)
+        if (qrCode.cellSize !in MIN_STANDARD_QR_CELL_SIZE..MAX_PREVIEW_QR_CELL_SIZE) {
+            diagnostics += PreviewApproximation("QR cell size ${qrCode.cellSize}", qrCode.path)
+        }
         lines += alignColumn(
             "{code:${escapeProperty(source)}; option:qrcode,$cellSize,${qrErrorCorrection(qrCode.errorCorrection)}}",
             qrCode.align,
@@ -287,7 +289,7 @@ public object DefaultReceiptLineExporter : ReceiptLineExporter {
     private val TEXT_SPECIAL_CHARACTERS: Set<Char> =
         setOf('\\', '|', '{', '}', '-', '=', '~', '_', '"', '`', '^')
     private val PROPERTY_SPECIAL_CHARACTERS: Set<Char> = setOf('\\', '|', '{', '}', ';')
-    private const val MIN_PREVIEW_QR_CELL_SIZE: Int = 3
+    private const val MIN_STANDARD_QR_CELL_SIZE: Int = 3
     private const val MAX_PREVIEW_QR_CELL_SIZE: Int = 8
     private const val MAX_PREVIEW_SCALE: Int = 6
 }

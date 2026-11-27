@@ -1,3 +1,8 @@
+## 0.1.5
+
+- Return an independent command buffer on each read of a Flutter compile result.
+- Preserve one- and two-dot QR cells in ReceiptLine exports and bundled iOS SVG previews. Keep the preview warning for external renderers.
+
 ## 0.1.4
 
 - Preserve CJK compatibility ideographs in iOS SVG text while continuing to compose combining sequences.

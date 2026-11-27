@@ -115,6 +115,17 @@ void main() {
     },
   );
 
+  test('compile response isolates input and returned command bytes', () {
+    final input = Uint8List.fromList([0, 255]);
+    final response = CompileResponseDto.fromMap({
+      'bytes': input,
+      'diagnostics': [],
+    });
+    input[0] = 42;
+    response.bytes![1] = 42;
+    expect(response.bytes, [0, 255]);
+  });
+
   test(
     'preview preserves warnings and nullable diagnostic positions',
     () async {

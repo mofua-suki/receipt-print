@@ -40,14 +40,19 @@ List<DiagnosticDto> _diagnostics(Map<Object?, Object?> map) =>
 /// Native printer commands and diagnostics produced by compilation.
 final class CompileResponseDto {
   CompileResponseDto.fromMap(Map<Object?, Object?> map)
-    : bytes = map['bytes'] as Uint8List?,
+    : _bytes = switch (map['bytes'] as Uint8List?) {
+        final bytes? => Uint8List.fromList(bytes),
+        null => null,
+      },
       diagnostics = _diagnostics(map);
 
-  /// Command bytes, or null if the job could not be compiled.
-  final Uint8List? bytes;
+  final Uint8List? _bytes;
+
+  /// A fresh copy of the command bytes, or null if compilation failed.
+  Uint8List? get bytes => _bytes == null ? null : Uint8List.fromList(_bytes);
   final List<DiagnosticDto> diagnostics;
   bool get isSuccess =>
-      bytes != null &&
+      _bytes != null &&
       !diagnostics.any(
         (value) => value.severity == DiagnosticSeverityDto.error,
       );
