@@ -96,9 +96,6 @@ public object DefaultReceiptLineExporter : ReceiptLineExporter {
                 appendBlock(block, profile.columnsPerLine, lines, diagnostics)
             }
             appendCut(ticket.cut, NodePath(ticketIndex = ticketIndex), lines, diagnostics)
-            if (ticketIndex < resolvedJob.tickets.lastIndex && ticket.cut == CutMode.None) {
-                lines += ""
-            }
         }
 
         lines += "{text:wrap}"
@@ -170,6 +167,21 @@ public object DefaultReceiptLineExporter : ReceiptLineExporter {
         ) {
             diagnostics += InvalidLayout(
                 reason = "ReceiptLine QR preview cannot preserve this CP932 payload as UTF-8",
+                path = qrCode.path,
+            )
+            return
+        }
+        // ReceiptLine getCapacity(level, 40) in byte mode. The encoding check above
+        // ensures data.size is also the UTF-8 length before ReceiptLine escaping.
+        val maximumBytes = when (qrCode.errorCorrection) {
+            QrErrorCorrection.Low -> 2953
+            QrErrorCorrection.Medium -> 2331
+            QrErrorCorrection.Quartile -> 1663
+            QrErrorCorrection.High -> 1273
+        }
+        if (qrCode.data.size > maximumBytes) {
+            diagnostics += InvalidLayout(
+                reason = "ReceiptLine QR preview supports at most $maximumBytes bytes at ${qrCode.errorCorrection} correction",
                 path = qrCode.path,
             )
             return

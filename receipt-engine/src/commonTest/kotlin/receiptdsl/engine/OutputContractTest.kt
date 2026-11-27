@@ -68,6 +68,49 @@ public class OutputContractTest {
     }
 
     @Test
+    public fun previewChecksByteCapacityAtTheEffectiveQrCorrectionLevel() {
+        val epson = PrinterProfileDto(PrinterModelDto.EpsonTmM30)
+        val capacities = mapOf(
+            QrErrorCorrectionDto.Low to 2953,
+            QrErrorCorrectionDto.Medium to 2331,
+            QrErrorCorrectionDto.Quartile to 1663,
+            QrErrorCorrectionDto.High to 1273,
+        )
+        fun checkBoundary(printer: PrinterProfileDto, requested: QrErrorCorrectionDto, maxBytes: Int) {
+            // The final space expands in ReceiptLine markup but is one byte of QR data.
+            val qr = QrCodeDto("a".repeat(maxBytes - 1) + " ", errorCorrection = requested)
+            assertTrue(engine.preview(job(qr), printer).isSuccess)
+            val tooLong = job(TextDto("Order"), qr.copy(data = qr.data + "a"))
+            val preview = engine.preview(tooLong, printer)
+            assertNull(preview.receiptLine)
+            val error = preview.diagnostics.single { it.severity == DiagnosticSeverityDto.Error }
+            assertEquals("INVALID_LAYOUT", error.code)
+            assertEquals(0, error.ticketIndex)
+            assertEquals(listOf(1), error.childIndexes)
+            assertTrue(engine.compile(tooLong, printer).isSuccess)
+        }
+        for ((level, limit) in capacities) checkBoundary(epson, level, limit)
+        val compatible = epson.copy(compatibilityMode = CompatibilityModeDto.Compatibility)
+        checkBoundary(compatible, QrErrorCorrectionDto.High, 2331)
+        checkBoundary(compatible.copy(model = PrinterModelDto.StarMcPrint3), QrErrorCorrectionDto.Low, 1663)
+    }
+
+    @Test
+    public fun uncutTicketBoundaryPreservesOnlyExplicitFeed() {
+        for (printer in listOf(PrinterModelDto.EpsonTmM30, PrinterModelDto.StarMcPrint3)) {
+            val profile = PrinterProfileDto(printer)
+            for (feed in 0..1) {
+                val first = if (feed == 0) job(TextDto("A")) else job(TextDto("A"), FeedDto())
+                val input = PrintJobDto(first.tickets + job(TextDto("B")).tickets)
+                val expected = "{text:nowrap}\nA |\n" + "\n".repeat(feed) + "B |\n{text:wrap}"
+                assertEquals(expected, engine.preview(input, profile).receiptLine)
+                val bytes = assertNotNull(engine.compile(input, profile).bytes)
+                assertEquals(2 + feed, bytes.count { it == 0x0a.toByte() })
+            }
+        }
+    }
+
+    @Test
     public fun compatibilityQrOptionsAreResolvedAndDiagnosedBeforeOutput() {
         for (model in PrinterModelDto.entries) {
             val printer = PrinterProfileDto(model, compatibilityMode = CompatibilityModeDto.Compatibility)
