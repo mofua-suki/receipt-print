@@ -17,7 +17,7 @@ flutter pub add receipt_print
 pub.dev からインストールしたパッケージには Android の Maven 成果物と iOS の XCFramework が同梱されています。
 
 - Flutter 3.44.5 以降、Dart 3.12.2 以上 4.0.0 未満（リポジトリの `.tool-versions` は Flutter 3.44.5）
-- Android API 24 以降、JDK 17 以降、Kotlin 2.4.10 以降
+- Android は API 24 以降の端末に対応します。ビルドには Android SDK Platform 36、JDK 17 以降、Kotlin 2.4.10 以降が必要です。
 - iOS 15 以降、arm64 の実機と Apple Silicon Simulator
 
 Android の検証用 example は AGP 9.0.1 と Kotlin 2.4.10 を使用します。
