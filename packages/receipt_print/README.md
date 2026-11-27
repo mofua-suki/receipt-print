@@ -95,6 +95,8 @@ Both platforms render with the bundled ReceiptLine 4.0.1 script. iOS uses JavaSc
 
 `renderSvg()` preserves CJK compatibility ideographs such as 塚 while composing combining sequences. External renderers may normalize text differently.
 
+For tall order numbers that should look the same in print and preview, use 1× width and 2× height. ReceiptLine also supports 2× width with 1× height and equal scales up to 6×. For other asymmetric scales, the preview preserves the printed width up to 6× and reports `PREVIEW_APPROXIMATION`. Printing uses the scale supported by the printer.
+
 `preview()` exports the effective QR cell size after printer settings are applied, up to 8 dots. At 1 or 2 dots it preserves the size and reports `PREVIEW_APPROXIMATION` because standard ReceiptLine 4.0.1 renderers use a minimum of 3. Effective sizes above 8 are exported as 8 with the same warning. The bundled SVG renderer uses the exported size, reducing it only as needed to fit a whole number of dots per module. Rendering fails if the matrix cannot be generated or a one-dot module cannot fit. Printing uses the printer’s effective size.
 
 ## Run the example or build from source
