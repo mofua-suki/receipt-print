@@ -89,6 +89,8 @@ Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
 
 The iOS renderer uses JavaScriptCore with the bundled ReceiptLine 4.0.1 script and license (LF line endings). The preview uses local fonts and disables WebView scripts, external resources and external navigation. SVG rendering is available only on iOS.
 
+The bundled script has two local changes. `renderSvg()` preserves CJK compatibility ideographs such as 塚 in text while composing combining sequences. For QR codes it uses the largest whole-dot cell size up to the requested size that fits the drawing area. Rendering fails when the QR matrix cannot be generated or one dot per module cannot fit. `preview()` returns the original ReceiptLine text and effective QR settings. External renderers apply their own Unicode normalization and sizing, so their output can differ from the bundled SVG. Printer commands retain the configured QR size.
+
 ## Run the example or build from source
 
 See the [example](https://github.com/mofua-suki/receipt-print/tree/main/packages/receipt_print/example) for a Flutter app that compiles a receipt and displays its command length, ReceiptLine output, and diagnostics.

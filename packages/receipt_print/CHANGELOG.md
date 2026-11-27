@@ -1,3 +1,8 @@
+## 0.1.4
+
+- Preserve CJK compatibility ideographs in iOS SVG text while continuing to compose combining sequences.
+- Fit QR modules to the available width in iOS SVGs. ReceiptLine exports and printer QR commands retain their effective cell sizes.
+
 ## 0.1.3
 
 - Return `INVALID_LAYOUT` when a preview QR payload exceeds the effective correction level's byte capacity.
