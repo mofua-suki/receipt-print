@@ -92,6 +92,57 @@ void main() {
     expect(find.byType(UiKitView), findsOneWidget);
   });
 
+  testWidgets('name forms and QR cell sizes survive preview export', (
+    tester,
+  ) async {
+    const printer = PrinterProfileDto(
+      model: PrinterModelDto.epsonTmM30,
+      columnsPerLine: 32,
+    );
+    final data = 'A' * 300;
+    final job = PrintJobDto(
+      tickets: [
+        TicketDto(
+          children: [QrCodeDto(data: data), const TextDto(value: '塚田')],
+          cut: CutModeDto.none,
+        ),
+      ],
+    );
+    final printed = await engine.compile(job: job, printer: printer);
+    final hex = printed.bytes!.map((byte) {
+      return byte.toRadixString(16).padLeft(2, '0');
+    }).join();
+    expect(hex, contains('1d286b0300314306')); // ESC/POS cell size 6.
+    expect(hex, contains('fa9c9363')); // Engine CP932 mapping for 塚田.
+    final preview = await engine.preview(job: job, printer: printer);
+    final text = preview.receiptLine!;
+    expect(text, contains('| {code:$data; option:qrcode,6,m} |'));
+    expect(text, contains('塚田'));
+
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    final svg = await engine.renderSvg(text, columns: 32);
+    expect(svg, contains('>塚</tspan>'));
+    expect(svg, contains('>田</tspan>'));
+    // 69 modules at 5 dots occupy 345 of 384 dots, centered at x=19.
+    expect(svg, contains('translate(19,0)"><path d="M0,0l5,0'));
+    final wide = await engine.renderSvg(text, columns: 48);
+    expect(wide, contains('translate(81,0)"><path d="M0,0l6,0'));
+
+    final combined = await engine.renderSvg('塚か\u3099e\u0301 |', columns: 32);
+    expect(combined, contains('>塚</tspan>'));
+    expect(combined, contains('>が</tspan>'));
+    expect(combined, contains('>é</tspan>'));
+    await expectLater(
+      engine.renderSvg(text, columns: 1),
+      throwsA(isA<PlatformException>()),
+    );
+    final oversized = 'A' * 2332;
+    await expectLater(
+      engine.renderSvg('{code:$oversized; option:qrcode,6,m}', columns: 48),
+      throwsA(isA<PlatformException>()),
+    );
+  });
+
   testWidgets('the native channel preserves all six printer models', (
     tester,
   ) async {

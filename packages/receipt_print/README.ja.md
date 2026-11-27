@@ -182,5 +182,7 @@ Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
 SVG は iOS の JavaScriptCore で生成します。ReceiptLine 4.0.1 の `lib/receiptline.js` は改行を LF にそろえ、付属のライセンスとともに同梱しています。
 プレビューではローカルのフォントを使います。WebView のスクリプト、外部リソース、外部への遷移は無効です。Android では SVG 描画を利用できません。
 
+同梱スクリプトには2点の変更があります。`renderSvg()` はテキスト中の「塚」などのCJK互換漢字を保持し、結合文字列には従来どおりNFCを適用します。QRは指定セル幅を上限に、描画領域に収まる最大の整数ドット幅で表示します。QRの行列を生成できない場合や、1セル1ドットでも収まらない場合は描画エラーになります。`preview()` は元の字形と実効QR設定を含むReceiptLineを返します。外部描画器では正規化と寸法計算の違いで表示が異なる場合があります。印刷コマンドは設定どおりのQRセル幅を使います。
+
 `InlineLineDto` は、各 `TextRunDto` を暗黙の余白なしで並べる整形済みの一行です。
 各区間のスタイルと入力済みの余白を保持し、自動で折り返しません。区間に改行は指定できません。

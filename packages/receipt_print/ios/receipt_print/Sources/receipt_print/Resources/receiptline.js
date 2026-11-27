@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Locally modified for receipt_print: preserve CJK name forms in text and fit SVG QR codes.
+
 // QR Code is a registered trademark of DENSO WAVE INCORPORATED.
 
 (function () {
@@ -56,7 +58,7 @@ limitations under the License.
             doc = doc.slice(1);
         }
         // parse each line and generate commands
-        const res = doc.normalize().split(/\n|\r\n|\r/).map(line => createLine(parseLine(line, state), ptr, state));
+        const res = doc.split(/\n|\r\n|\r/).map(line => createLine(parseLine(line, state), ptr, state));
         // if rules is not finished
         switch (state.line) {
             case 'ready':
@@ -136,7 +138,7 @@ limitations under the License.
                 // parse each line and generate commands
                 const lines = this.data.split(/\n|\r\n|\r/);
                 while (lines.length > 1) {
-                    const s = createLine(parseLine(lines.shift().normalize(), state), ptr, state);
+                    const s = createLine(parseLine(lines.shift(), state), ptr, state);
                     ptr.upsideDown ? this.buffer.push(s) : this._push(s);
                 }
                 this.data = lines.shift();
@@ -144,7 +146,7 @@ limitations under the License.
             },
             flush(callback) {
                 // parse last line and generate commands
-                const s = createLine(parseLine(this.data.normalize(), state), ptr, state);
+                const s = createLine(parseLine(this.data, state), ptr, state);
                 ptr.upsideDown ? this.buffer.push(s) : this._push(s);
                 // if rules is not finished
                 switch (state.line) {
@@ -208,7 +210,10 @@ limitations under the License.
      */
     function parseLine(columns, state) {
         // extract columns
-        const line = columns
+        // Keep compatibility ideographs in text while applying upstream NFC
+        // to surrounding runs (including decomposed kana and accents).
+        const line = columns.split(/([\uF900-\uFAFF\u{2F800}-\u{2FA1F}]+)/u)
+            .map((part, i) => i % 2 ? part : part.normalize()).join('')
             // trim whitespace
             .replace(/^[\t ]+|[\t ]+$/g, '')
             // convert escape characters ('\\', '\{', '\|', '\}') to hexadecimal escape characters
@@ -234,7 +239,7 @@ limitations under the License.
                 // parse properties
                 if (/^\{[^{}]*\}$/.test(element)) {
                     // extract members
-                    result.property = element
+                    result.property = element.normalize()
                         // trim property delimiters
                         .slice(1, -1)
                         // convert escape character ('\;') to hexadecimal escape characters
@@ -2134,7 +2139,12 @@ limitations under the License.
                 const matrix = qrcode.generate(symbol);
                 const w = matrix.length;
                 const h = w;
-                const c = symbol.cell;
+                if (!w) throw new RangeError('ReceiptLine could not generate a QR matrix');
+                const areaWidth = this.lineWidth * this.charWidth;
+                if (w > areaWidth) {
+                    throw new RangeError('QR matrix exceeds SVG area at one dot per module');
+                }
+                const c = w * symbol.cell > areaWidth ? Math.floor(areaWidth / w) : symbol.cell;
                 let path = '<path d="';
                 for (let y = 0; y < h; y++) {
                     for (let x = 0; x < w; x++) {
@@ -2144,7 +2154,7 @@ limitations under the License.
                     }
                 }
                 path += '" stroke="transparent" fill="#000"/>';
-                const margin = Math.floor(this.lineMargin * this.charWidth + (this.lineWidth * this.charWidth - w * c) * this.lineAlign / 2);
+                const margin = Math.floor(this.lineMargin * this.charWidth + (areaWidth - w * c) * this.lineAlign / 2);
                 this.svgContent += `<g transform="translate(${margin},${this.svgHeight})">${path}</g>`;
                 this.svgHeight += h * c;
             }
