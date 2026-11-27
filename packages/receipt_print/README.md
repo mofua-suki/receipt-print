@@ -73,6 +73,8 @@ The Dart API sends models over a MethodChannel to Kotlin or Swift. The native en
 
 ## Receipt preview
 
+Android SVG rendering and the native preview view require `receipt_print` 0.1.7 or later.
+
 `receipt.measureText(text)` measures CP932 column widths on both platforms, skipping unencodable characters. `preview()` returns ReceiptLine text on Android and iOS. On either platform, pass that text to `renderSvg()` and display the returned SVG with `ReceiptPreviewView`. Use the same column count as in the printer profile.
 
 ```dart

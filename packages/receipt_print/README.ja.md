@@ -164,6 +164,8 @@ xcodebuild test -project Runner.xcodeproj -scheme Runner \
 
 ## 紙面プレビュー
 
+Android の SVG 描画とネイティブプレビューの表示には `receipt_print` 0.1.7 以降が必要です。
+
 `receipt.measureText(text)` は Android と iOS で互換モードと同じ CP932 の桁数を返します。CP932 で表現できない文字は数えません。
 印刷と同じ `job` と `printer` を使い、Android と iOS で次のように紙面を表示できます。
 

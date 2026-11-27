@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'receipt_print'
-  s.version = '0.1.6'
+  s.version = '0.1.7'
   s.summary = 'Receipt command and preview conversion using the KMP receipt-print engine.'
   s.description = 'Converts generic print trees into printer commands and ReceiptLine previews using the KMP engine. Printer transport is owned by the caller.'
   s.homepage = 'https://github.com/mofua-suki/receipt-print'

@@ -1,4 +1,4 @@
-## Unreleased
+## 0.1.7
 
 - Render ReceiptLine SVGs and display the native receipt preview on Android.
 
