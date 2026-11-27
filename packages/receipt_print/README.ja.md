@@ -1,20 +1,10 @@
 # Receipt Print
 
+[English](https://github.com/mofua-suki/receipt-print/blob/main/packages/receipt_print/README.md) · [pub.dev](https://pub.dev/packages/receipt_print)
+
 汎用印刷ツリーからサーマルプリンター向けコマンドと ReceiptLine プレビューを生成する Flutter プラグインです。
 変換処理は、このリポジトリの Kotlin Multiplatform `ReceiptEngine` を利用します。
 プリンターへの接続、送信、再試行は利用側で実装します。
-
-## 対応環境
-
-- Flutter 3.44.5 以降、Dart 3.12.2 以降（リポジトリの `.tool-versions` は Flutter 3.44.5）
-- Android API 24 以降、JDK 17 以降、Kotlin 2.4.10 以降
-- iOS 15 以降、arm64 の実機と Apple Silicon Simulator
-
-Android の検証用 example は AGP 9.0.1 と Kotlin 2.4.10 を使用します。
-Flutter の iOS 連携は CocoaPods と Swift Package Manager の定義を含みます。
-Web、macOS、Windows、Linux と Intel Mac の iOS Simulator は対象外です。
-iOS アプリの Runner ターゲットの Minimum Deployments を 15.0 以上に設定してください。
-CocoaPods を使うアプリでは、`Podfile` にも `platform :ios, '15.0'` を指定します。
 
 ## インストール
 
@@ -25,6 +15,16 @@ flutter pub add receipt_print
 ```
 
 pub.dev からインストールしたパッケージには Android の Maven 成果物と iOS の XCFramework が同梱されています。
+
+- Flutter 3.44.5 以降、Dart 3.12.2 以上 4.0.0 未満（リポジトリの `.tool-versions` は Flutter 3.44.5）
+- Android API 24 以降、JDK 17 以降、Kotlin 2.4.10 以降
+- iOS 15 以降、arm64 の実機と Apple Silicon Simulator
+
+Android の検証用 example は AGP 9.0.1 と Kotlin 2.4.10 を使用します。
+Flutter の iOS 連携は CocoaPods と Swift Package Manager の定義を含みます。
+Web、macOS、Windows、Linux と Intel Mac の iOS Simulator は対象外です。
+iOS アプリの Runner ターゲットの Minimum Deployments を 15.0 以上に設定してください。
+CocoaPods を使うアプリでは、`Podfile` にも `platform :ios, '15.0'` を指定します。
 
 ## ソースから利用する場合
 
@@ -39,7 +39,7 @@ Android だけを使う場合は `prepareFlutterAndroid`、iOS だけを使う�
 生成する Maven リポジトリと XCFramework は Git 管理対象外です。
 KMP のコードを変更した場合は、同じタスクで再生成してください。
 Maven のバージョンは `engine-version.txt` で固定し、Android と KMP で共有します。
-配布する内容を変更するときは、このファイルのバージョンを上げて全成果物を再生成してください。
+ネイティブエンジンの配布物を変更するときは、このファイルのバージョンを上げて全成果物を再生成してください。
 `./gradlew bundleFlutterPlugin` は両 OS の配布物を含む ZIP を `build/distributions` に生成します。
 CI は検証したコミットの ZIP を保存します。
 Receipt Print の独自コードは Apache License 2.0 で公開しています。配布 ZIP には本プロジェクトの LICENSE と、同梱する Unicode および ReceiptLine のライセンスを含めています。
@@ -66,37 +66,39 @@ Android の依存解決でプロジェクト側のリポジトリを禁止して
 ```dart
 import 'package:receipt_print/receipt_print.dart';
 
-final receipt = ReceiptPrint();
-const job = PrintJobDto(tickets: [
-  TicketDto(children: [
-    TextDto(value: '注文 #12', style: TextStyleDto(emphasized: true)),
-    TwoColumnDto(
-      leading: TextRunDto(value: 'コーヒー'),
-      trailing: TextRunDto(value: '2'),
-    ),
-    RuleDto(),
-    QrCodeDto(data: 'https://example.com/order/12'),
-    FeedDto(),
-  ]),
-]);
-const printer = PrinterProfileDto(model: PrinterModelDto.epsonTmM30);
+Future<void> compileReceipt() async {
+  final receipt = ReceiptPrint();
+  const job = PrintJobDto(tickets: [
+    TicketDto(children: [
+      TextDto(value: '注文 #12', style: TextStyleDto(emphasized: true)),
+      TwoColumnDto(
+        leading: TextRunDto(value: 'コーヒー'),
+        trailing: TextRunDto(value: '2'),
+      ),
+      RuleDto(),
+      QrCodeDto(data: 'https://example.com/order/12'),
+      FeedDto(),
+    ]),
+  ]);
+  const printer = PrinterProfileDto(model: PrinterModelDto.epsonTmM30);
 
-final compiled = await receipt.compile(job: job, printer: printer);
-if (compiled.isSuccess) {
-  final bytes = compiled.bytes!; // Uint8List。利用側でプリンターへ送信する。
-  print('コマンド長: ${bytes.length}');
-}
-for (final diagnostic in compiled.diagnostics) {
-  print('${diagnostic.code}: ${diagnostic.message}');
-}
+  final compiled = await receipt.compile(job: job, printer: printer);
+  if (compiled.isSuccess) {
+    final bytes = compiled.bytes!; // Uint8List。利用側でプリンターへ送信する。
+    print('コマンド長: ${bytes.length}');
+  }
+  for (final diagnostic in compiled.diagnostics) {
+    print('${diagnostic.code}: ${diagnostic.message}');
+  }
 
-final preview = await receipt.preview(job: job, printer: printer);
-print(preview.receiptLine);
+  final preview = await receipt.preview(job: job, printer: printer);
+  print(preview.receiptLine);
+}
 ```
 
 `ColumnDto` でツリーを入れ子にできます。
 公開 DTO のフィールドと既定値は KMP に対応し、子ノードの配列には Dart の `List<PrintNodeDto>` を使います。
-`PrinterModelDto` の 6 機種に対応します。
+Epson TM-m30・TM-T90KP、Star FVP10・TSP650II・mC-Print3、Seiko Instruments RP-F10 に対応します。用紙と機種に合う桁数を `columnsPerLine` に指定します。TM-m30 の `optionalExternalBuzzerEnabled` は対応する外付けブザーを設定済みの場合に指定してください。
 Dart のモデルで渡す整数は、Kotlin の `Int` と同じ符号付き 32 ビット整数の範囲です。
 
 変換が成功すると `isSuccess` が `true` になります。
@@ -119,7 +121,7 @@ Android と iOS のネイティブプロジェクトは、既存の KMP 配布�
 
 ## 検証
 
-このディレクトリで Dart の解析とテストを実行します。
+Git チェックアウトの `packages/receipt_print` で Dart の解析とテストを実行します。
 
 ```shell
 flutter pub get
@@ -133,11 +135,13 @@ cd android
 ```
 
 iOS Simulator で実際の MethodChannel と KMP を通すテストを実行できます。
-Android 端末またはエミュレーターでも、同じテストを実行できます。
+Android 端末またはエミュレーターでも、同じテストを実行できます。次のコマンドはリポジトリのルートから実行します。
 
 ```shell
 cd packages/receipt_print/example
-flutter test integration_test/plugin_integration_test.dart -d <device-id>
+flutter devices
+# DEVICE_ID に対象端末の ID を設定します。
+flutter test integration_test/plugin_integration_test.dart -d "$DEVICE_ID"
 ```
 
 iOS 側の DTO 変換と不正引数のテストは、`example` で次のコマンドを実行します。
@@ -147,24 +151,28 @@ iOS 側の DTO 変換と不正引数のテストは、`example` で次のコマ�
 flutter build ios --simulator --debug --config-only
 cd ios
 xcodebuild test -project Runner.xcodeproj -scheme Runner \
-  -destination 'platform=iOS Simulator,id=<device-id>' \
+  -destination "platform=iOS Simulator,id=$DEVICE_ID" \
   -parallel-testing-enabled NO -only-testing:RunnerTests
 ```
 
-サンプルアプリは `example` ディレクトリで `flutter run` を実行すると起動します。
+[サンプルアプリ](https://github.com/mofua-suki/receipt-print/tree/main/packages/receipt_print/example)はコマンド長、ReceiptLine、診断を表示します。`example` ディレクトリで `flutter run` を実行すると起動します。
 
 ## 紙面プレビュー
 
-`ReceiptPrint.measureText(text)` は Android と iOS で互換モードと同じ CP932 の桁数を返します。CP932 で表現できない文字は数えません。
+`receipt.measureText(text)` は Android と iOS で互換モードと同じ CP932 の桁数を返します。CP932 で表現できない文字は数えません。
 印刷と同じ `job` と `printer` を使い、iOS で次のように紙面を表示できます。
 
 ```dart
-final preview = await engine.preview(job: job, printer: printer);
-final receiptLine = preview.receiptLine;
-if (receiptLine != null) {
-  final svg = await engine.renderSvg(receiptLine, columns: printer.columnsPerLine);
-  final previewView = SizedBox(height: 320, child: ReceiptPreviewView(svg: svg));
-  // ウィジェットツリーへ previewView を配置します。
+import 'package:flutter/widgets.dart';
+import 'package:receipt_print/receipt_print.dart';
+
+Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
+  final receipt = ReceiptPrint();
+  final preview = await receipt.preview(job: job, printer: printer);
+  final text = preview.receiptLine;
+  if (text == null) return null;
+  final svg = await receipt.renderSvg(text, columns: printer.columnsPerLine);
+  return SizedBox(height: 320, child: ReceiptPreviewView(svg: svg));
 }
 ```
 

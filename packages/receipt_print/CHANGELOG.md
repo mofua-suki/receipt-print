@@ -1,3 +1,7 @@
+## 0.1.2
+
+- Align English and Japanese installation, preview and verification examples.
+
 ## 0.1.1
 
 - Provide an English package README and retain the Japanese documentation.
