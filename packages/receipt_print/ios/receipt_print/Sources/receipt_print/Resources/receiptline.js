@@ -58,7 +58,7 @@ limitations under the License.
             doc = doc.slice(1);
         }
         // parse each line and generate commands
-        const res = doc.split(/\n|\r\n|\r/).map(line => createLine(parseLine(line, state), ptr, state));
+        const res = doc.split(/\n|\r\n|\r/).map(line => createLine(parseLine(line, state, ptr.command), ptr, state));
         // if rules is not finished
         switch (state.line) {
             case 'ready':
@@ -138,7 +138,7 @@ limitations under the License.
                 // parse each line and generate commands
                 const lines = this.data.split(/\n|\r\n|\r/);
                 while (lines.length > 1) {
-                    const s = createLine(parseLine(lines.shift(), state), ptr, state);
+                    const s = createLine(parseLine(lines.shift(), state, ptr.command), ptr, state);
                     ptr.upsideDown ? this.buffer.push(s) : this._push(s);
                 }
                 this.data = lines.shift();
@@ -146,7 +146,7 @@ limitations under the License.
             },
             flush(callback) {
                 // parse last line and generate commands
-                const s = createLine(parseLine(this.data, state), ptr, state);
+                const s = createLine(parseLine(this.data, state, ptr.command), ptr, state);
                 ptr.upsideDown ? this.buffer.push(s) : this._push(s);
                 // if rules is not finished
                 switch (state.line) {
@@ -206,9 +206,10 @@ limitations under the License.
      * Parse lines.
      * @param {string} columns line text without line breaks
      * @param {object} state state variables
+     * @param {object} command output command set
      * @returns {object} parsed line object
      */
-    function parseLine(columns, state) {
+    function parseLine(columns, state, command) {
         // extract columns
         // Keep compatibility ideographs in text while applying upstream NFC
         // to surrounding runs (including decomposed kana and accents).
@@ -295,12 +296,13 @@ limitations under the License.
                         // parse option property
                         if ('option' in result.property) {
                             const option = result.property.option.toLowerCase().split(/[\t ]+|,/);
+                            const minCell = command.qrcode === _svg.qrcode ? 1 : 3;
                             state.option = {
                                 type: (option.find(c => /^(upc|ean|jan|code39|itf|codabar|nw7|code93|code128|qrcode)$/.test(c)) || 'code128'),
                                 width: Number(option.find(c => /^\d+$/.test(c) && Number(c) >= 2 && Number(c) <= 4) || '2'),
                                 height: Number(option.find(c => /^\d+$/.test(c) && Number(c) >= 24 && Number(c) <= 240) || '72'),
                                 hri: !!option.find(c => /^hri$/.test(c)),
-                                cell: Number(option.find(c => /^\d+$/.test(c) && Number(c) >= 3 && Number(c) <= 8) || '3'),
+                                cell: Number(option.find(c => /^\d+$/.test(c) && Number(c) >= minCell && Number(c) <= 8) || '3'),
                                 level: (option.find(c => /^[lmqh]$/.test(c)) || 'l'),
                                 quietZone: false
                             };
