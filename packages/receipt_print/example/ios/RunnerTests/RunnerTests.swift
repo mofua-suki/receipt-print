@@ -4,6 +4,14 @@ import XCTest
 @testable import receipt_print
 
 class RunnerTests: XCTestCase {
+    func testBundledPrivacyManifestIsAPropertyListDictionary() throws {
+        let bundle = try XCTUnwrap(ReceiptSvgRenderer.resourceBundle)
+        let url = try XCTUnwrap(bundle.url(forResource: "PrivacyInfo", withExtension: "xcprivacy"))
+        let data = try Data(contentsOf: url)
+        let manifest = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)
+        XCTAssertTrue(manifest is [String: Any])
+    }
+
     func testUnknownMethodsAreNotImplemented() {
         let done = expectation(description: "method not implemented response")
         done.assertForOverFulfill = true

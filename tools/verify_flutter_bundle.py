@@ -41,6 +41,7 @@ def verify_package(package, version):
         "android/build.gradle.kts",
         "ios/receipt_print.podspec",
         "ios/receipt_print/Package.swift",
+        "ios/receipt_print/Sources/receipt_print/PrivacyInfo.xcprivacy",
         "ios/receipt_print/Sources/receipt_print/Resources/receiptline.js",
         "ios/receipt_print/Sources/receipt_print/Resources/ReceiptLine-LICENSE",
     ):

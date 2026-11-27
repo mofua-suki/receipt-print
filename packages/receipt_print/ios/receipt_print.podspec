@@ -8,7 +8,10 @@ Pod::Spec.new do |s|
   s.author = 'receipt-print contributors'
   s.source = { :path => '.' }
   s.source_files = 'receipt_print/Sources/receipt_print/**/*.swift'
-  s.resource_bundles = { 'ReceiptPrintResources' => 'receipt_print/Sources/receipt_print/Resources/*' }
+  s.resource_bundles = { 'ReceiptPrintResources' => [
+    'receipt_print/Sources/receipt_print/Resources/*',
+    'receipt_print/Sources/receipt_print/PrivacyInfo.xcprivacy'
+  ] }
   s.frameworks = 'JavaScriptCore', 'WebKit'
   s.dependency 'Flutter'
   s.platform = :ios, '15.0'

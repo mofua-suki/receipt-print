@@ -39,16 +39,19 @@ enum ReceiptSvgRenderer {
         return svg.replacingOccurrences(of: "(?s)<style[^>]*>.*?</style>", with: "", options: .regularExpression)
     }
 
-    private static func bundledScriptURL() throws -> URL {
+    static var resourceBundle: Bundle? {
         #if SWIFT_PACKAGE
-        let bundle: Bundle? = .module
+        return .module
         #else
-        let bundle = (Bundle(for: ReceiptPrintPlugin.self)
+        return (Bundle(for: ReceiptPrintPlugin.self)
             .url(forResource: "ReceiptPrintResources", withExtension: "bundle")
             ?? Bundle.main.url(forResource: "ReceiptPrintResources", withExtension: "bundle"))
             .flatMap(Bundle.init(url:))
         #endif
-        guard let url = bundle?.url(forResource: "receiptline", withExtension: "js") else {
+    }
+
+    private static func bundledScriptURL() throws -> URL {
+        guard let url = resourceBundle?.url(forResource: "receiptline", withExtension: "js") else {
             throw ReceiptChannelError.invalidArguments("Missing bundled ReceiptLine renderer")
         }
         return url

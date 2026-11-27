@@ -1,5 +1,6 @@
 ## 0.1.7
 
+- Include the iOS privacy manifest in the plugin resource bundle for SwiftPM and CocoaPods.
 - Match iOS by reporting `invalid_arguments` when ReceiptLine cannot render input on Android. WebView failures still report `engine_error`.
 - Document Star rule widths and the separate QR constraints for printing and preview.
 - Preserve printed text width (up to 6×) when approximating asymmetric scales in ReceiptLine previews, so tall text fits the same line as in print.
