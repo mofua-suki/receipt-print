@@ -135,8 +135,11 @@ Run the MethodChannel integration test from the repository root on an iOS simula
 ```shell
 cd packages/receipt_print/example
 flutter devices
-# Set DEVICE_ID to the device identifier shown above.
-flutter test integration_test/plugin_integration_test.dart -d "$DEVICE_ID"
+# Replace each placeholder with the corresponding ID from flutter devices.
+ANDROID_DEVICE='<Android device or emulator ID>'
+IOS_DEVICE='<iOS Simulator UDID>'
+flutter test integration_test/plugin_integration_test.dart -d "$ANDROID_DEVICE"
+flutter test integration_test/plugin_integration_test.dart -d "$IOS_DEVICE"
 ```
 
 From the example directory, restore the normal app configuration after the integration test and run the iOS DTO and invalid-argument tests.
@@ -145,7 +148,7 @@ From the example directory, restore the normal app configuration after the integ
 flutter build ios --simulator --debug --config-only
 cd ios
 xcodebuild test -project Runner.xcodeproj -scheme Runner \
-  -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+  -destination "platform=iOS Simulator,id=$IOS_DEVICE" \
   -parallel-testing-enabled NO -only-testing:RunnerTests
 ```
 
