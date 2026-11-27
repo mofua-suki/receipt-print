@@ -1,6 +1,6 @@
 name: receipt_print
 description: Compile generic receipt trees with the receipt-print Kotlin Multiplatform engine.
-version: 0.1.5
+version: 0.1.6
 repository: https://github.com/mofua-suki/receipt-print
 
 environment:

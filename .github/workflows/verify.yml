@@ -47,6 +47,16 @@ jobs:
           flutter pub get
           flutter analyze
           flutter test
+      - name: Test the example as shipped in the distribution
+        env:
+          ARCHIVE: ${{ steps.bundle.outputs.archive }}
+        run: |
+          example_package=$(mktemp -d "$RUNNER_TEMP/receipt-example.XXXXXX")
+          trap 'rm -rf -- "$example_package"' EXIT
+          python3 -m zipfile -e "$ARCHIVE" "$example_package"
+          cd "$example_package/example"
+          flutter create --platforms=android,ios .
+          flutter test test/widget_test.dart
       - name: Check the example against the distribution
         working-directory: ${{ runner.temp }}/receipt_print/example
         run: flutter test
