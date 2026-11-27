@@ -37,7 +37,7 @@ class ReceiptPrintPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 return
             }
             if (call.method == "renderSvg") {
-                val text = arguments["text"] as? String ?: throw IllegalArgumentException("Expected text")
+                val text = arguments["receiptLine"] as? String ?: throw IllegalArgumentException("Expected receiptLine")
                 val columns = arguments["columns"] as? Int ?: throw IllegalArgumentException("Expected columns")
                 require(columns > 0) { "Columns must be greater than zero" }
                 val svgRenderer = renderer ?: throw IllegalStateException("Receipt renderer is detached")
