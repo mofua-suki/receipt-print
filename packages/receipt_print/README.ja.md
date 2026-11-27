@@ -101,6 +101,9 @@ Future<void> compileReceipt() async {
 Epson TM-m30・TM-T90KP、Star FVP10・TSP650II・mC-Print3、Seiko Instruments RP-F10 に対応します。用紙と機種に合う桁数を `columnsPerLine` に指定します。TM-m30 の `optionalExternalBuzzerEnabled` は対応する外付けブザーを設定済みの場合に指定してください。
 Dart のモデルで渡す整数は、Kotlin の `Int` と同じ符号付き 32 ビット整数の範囲です。
 
+QR プレビューには印字可能な ASCII を指定します。データの上限は適用される誤り訂正レベルごとに L が 2953、M が 2331、Q が 1663、H が 1273 バイトです。Compatibility では ESC/POS 機が M、Star 機が Q を使います。上限を超えるとプレビューは `INVALID_LAYOUT` を返します。
+`CutModeDto.none` のチケット間に空行を入れるには `FeedDto()` を指定します。
+
 変換が成功すると `isSuccess` が `true` になります。
 警告だけの場合は、出力と診断の両方を返します。
 検証エラーの場合は `bytes` または `receiptLine` が `null` になり、`diagnostics` の `ticketIndex` と `childIndexes` から該当ノードを特定できます。

@@ -60,6 +60,9 @@ Future<void> compileReceipt() async {
 
 Use `ColumnDto` to nest nodes. Child lists use Dart's `List<PrintNodeDto>`. DTO fields and defaults correspond to KMP, including the signed 32-bit range for integer inputs. `InlineLineDto` joins styled runs on one preformatted line. It preserves explicit spacing, adds no padding, does not wrap and disallows newlines within runs.
 
+For a QR preview, use printable ASCII. The maximum payload in bytes depends on the effective error correction level (L 2953, M 2331, Q 1663, H 1273). Compatibility mode uses M for ESC/POS models and Q for Star models. An oversized preview returns `INVALID_LAYOUT`.
+Use `FeedDto()` for a blank line between tickets with `CutModeDto.none`.
+
 Both calls can return output alongside warnings. If receipt validation fails, the output is null. Use `ticketIndex` and `childIndexes` to find the affected node. Invalid platform-channel calls can throw a `PlatformException`.
 
 The supported models are Epson TM-m30 and TM-T90KP, Star FVP10, TSP650II and mC-Print3, and Seiko Instruments RP-F10. Set `columnsPerLine` to the width for the chosen printer and paper. The engine uses CP932 column widths. On a TM-m30, set `optionalExternalBuzzerEnabled` only if a compatible external buzzer is configured.
