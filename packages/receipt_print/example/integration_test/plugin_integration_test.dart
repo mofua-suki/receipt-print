@@ -127,14 +127,18 @@ void main() {
     expect(combined, contains('>塚</tspan>'));
     expect(combined, contains('>が</tspan>'));
     expect(combined, contains('>é</tspan>'));
-    await expectLater(
-      engine.renderSvg(text, columns: 1),
-      throwsA(isA<PlatformException>()),
+    final invalidArguments = throwsA(
+      isA<PlatformException>().having(
+        (e) => e.code,
+        'code',
+        'invalid_arguments',
+      ),
     );
+    await expectLater(engine.renderSvg(text, columns: 1), invalidArguments);
     final oversized = 'A' * 2332;
     await expectLater(
       engine.renderSvg('{code:$oversized; option:qrcode,6,m}', columns: 48),
-      throwsA(isA<PlatformException>()),
+      invalidArguments,
     );
   });
 

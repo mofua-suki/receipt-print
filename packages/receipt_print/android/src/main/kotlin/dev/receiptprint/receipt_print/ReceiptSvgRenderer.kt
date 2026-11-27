@@ -26,6 +26,7 @@ internal class ReceiptSvgRenderer(private val context: Context) {
         val invocation = """
             $script
             ;(() => {
+                if (!window.receiptline || typeof window.receiptline.transform !== "function") return null;
                 try {
                     return {svg: window.receiptline.transform(${JSONObject.quote(text)}, {
                         cpl: $columns, encoding: "cp932"
@@ -80,10 +81,14 @@ internal class ReceiptSvgRenderer(private val context: Context) {
                     view.evaluateJavascript(invocation) { encoded ->
                         val response = runCatching { JSONTokener(encoded ?: "null").nextValue() }
                             .getOrNull() as? JSONObject
-                        val svg = response?.optString("svg")
-                        if (svg == null || !svg.contains("<svg")) {
-                            fail(response?.optString("error")?.takeIf { it.isNotEmpty() }
-                                ?: "ReceiptLine SVG generation failed")
+                        if (response == null) {
+                            fail("ReceiptLine renderer returned no response")
+                            return@evaluateJavascript
+                        }
+                        val svg = response.optString("svg")
+                        if (!svg.contains("<svg")) {
+                            val message = response.optString("error").ifEmpty { "ReceiptLine SVG generation failed" }
+                            finish { result.error("invalid_arguments", message, null) }
                         } else {
                             finish { result.success(svg.replace(REMOTE_FONT_STYLE, "")) }
                         }

@@ -63,6 +63,8 @@ Use `ColumnDto` to nest nodes. Child lists use Dart's `List<PrintNodeDto>`. DTO 
 For a QR preview, use printable ASCII. The maximum payload in bytes depends on the effective error correction level (L 2953, M 2331, Q 1663, H 1273). Compatibility mode uses M for ESC/POS models and Q for Star models. An oversized preview returns `INVALID_LAYOUT`.
 Use `FeedDto()` for a blank line between tickets with `CutModeDto.none`.
 
+A successful `compile()` means the print commands were generated. Check the printer’s QR limits and the preview capacity separately. On Star models, `RuleDto` uses the printable width from the model profile (currently 576 dots), regardless of `columnsPerLine`.
+
 Each read of a successful compile result’s `bytes` returns a fresh `Uint8List`. You can modify it before sending and read the original commands again.
 
 Both calls can return output alongside warnings. If receipt validation fails, the output is null. Use `ticketIndex` and `childIndexes` to find the affected node. Invalid platform-channel calls can throw a `PlatformException`.
@@ -92,6 +94,8 @@ Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
 ```
 
 Both platforms render with the bundled ReceiptLine 4.0.1 script. iOS uses JavaScriptCore and Android uses a separate offline WebView. The visible preview uses local fonts and disables scripts, external resources and navigation.
+
+On Android and iOS, `renderSvg()` throws a `PlatformException` with code `invalid_arguments` when ReceiptLine cannot render the input, for example if a QR code cannot fit even at one dot per module. Android WebView failures, including initialization, detachment and timeout, use `engine_error`.
 
 `renderSvg()` preserves CJK compatibility ideographs such as 塚 while composing combining sequences. External renderers may normalize text differently.
 
