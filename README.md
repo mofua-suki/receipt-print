@@ -42,7 +42,7 @@ The [architecture document](doc/receipt_dsl_kmp_architecture.md) describes bound
 
 ## Build and verify
 
-Use JDK 17 or later. iOS verification requires macOS, Xcode and an Apple Silicon simulator toolchain. The engine's JVM rendering tests and SVG golden checks require Node.js.
+Use JDK 17 or later and install Node.js with npm. During `./gradlew build`, Gradle uses `npm ci` to install ReceiptLine for the engine's JVM rendering tests. The SVG golden checks also use Node.js. iOS verification requires macOS, Xcode and an Apple Silicon simulator toolchain.
 
 ```shell
 ./gradlew build

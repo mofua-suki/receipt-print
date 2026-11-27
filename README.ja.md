@@ -47,7 +47,7 @@ PrintJobDto
 
 ## ビルドと検証
 
-JDK 17 以降が必要です。iOS の検証には macOS、Xcode、Apple Silicon Simulator toolchain、receipt-engine の JVM 描画テストと SVG Golden の検証には Node.js が必要です。
+JDK 17 以降と、Node.js および npm が必要です。`./gradlew build` では、Gradle が `receipt-engine` の JVM 描画テストに必要な ReceiptLine を `npm ci` でインストールします。SVG Golden の検証にも Node.js を使います。iOS の検証には macOS、Xcode、Apple Silicon Simulator toolchain が必要です。
 
 ```shell
 ./gradlew build

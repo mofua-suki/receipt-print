@@ -145,8 +145,11 @@ Android 端末またはエミュレーターでも、同じテストを実行で
 ```shell
 cd packages/receipt_print/example
 flutter devices
-# DEVICE_ID に対象端末の ID を設定します。
-flutter test integration_test/plugin_integration_test.dart -d "$DEVICE_ID"
+# flutter devices に表示された各 OS の ID を設定します。
+ANDROID_DEVICE='<Android device or emulator ID>'
+IOS_DEVICE='<iOS Simulator UDID>'
+flutter test integration_test/plugin_integration_test.dart -d "$ANDROID_DEVICE"
+flutter test integration_test/plugin_integration_test.dart -d "$IOS_DEVICE"
 ```
 
 iOS 側の DTO 変換と不正引数のテストは、`example` で次のコマンドを実行します。
@@ -156,7 +159,7 @@ iOS 側の DTO 変換と不正引数のテストは、`example` で次のコマ�
 flutter build ios --simulator --debug --config-only
 cd ios
 xcodebuild test -project Runner.xcodeproj -scheme Runner \
-  -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+  -destination "platform=iOS Simulator,id=$IOS_DEVICE" \
   -parallel-testing-enabled NO -only-testing:RunnerTests
 ```
 
