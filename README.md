@@ -42,7 +42,7 @@ The [architecture document](doc/receipt_dsl_kmp_architecture.md) describes bound
 
 ## Build and verify
 
-Use JDK 17 or later and install Node.js with npm. Gradle uses `npm ci --include=dev` to install the ReceiptLine development dependency. The engine's JVM rendering tests and the `./gradlew engineCheck` SVG golden check use that installation. iOS verification requires macOS, Xcode and an Apple Silicon simulator toolchain.
+Use JDK 17 or later. iOS verification requires macOS, Xcode and an Apple Silicon simulator toolchain.
 
 ```shell
 ./gradlew build
@@ -51,7 +51,14 @@ Use JDK 17 or later and install Node.js with npm. Gradle uses `npm ci --include=
 ./gradlew fullCheck
 ```
 
-`engineCheck` verifies the ABI, JVM and iOS simulator tests, printer command fixtures, ReceiptLine SVG output and Kotlin and Swift samples.
+`engineCheck` verifies the ABI, JVM and iOS simulator tests, printer command fixtures, ReceiptLine alignment input and Kotlin and Swift samples.
+
+Verify the SVG output and alignment using the pinned JavaScript renderer in a separate Node.js check:
+
+```shell
+npm --prefix tools/receiptline ci --include=dev --ignore-scripts
+npm --prefix tools/receiptline run verify
+```
 
 Publish Maven artifacts to `build/maven-repository`:
 
