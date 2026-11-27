@@ -1,3 +1,7 @@
+## Unreleased
+
+- Render ReceiptLine SVGs and display the native receipt preview on Android.
+
 ## 0.1.6
 
 - Ship the example widget test and verify the distributed example after generating its platform files.

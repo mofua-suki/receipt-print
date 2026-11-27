@@ -73,7 +73,7 @@ The Dart API sends models over a MethodChannel to Kotlin or Swift. The native en
 
 ## Receipt preview
 
-`receipt.measureText(text)` measures CP932 column widths on both platforms, skipping unencodable characters. `preview()` returns ReceiptLine text on Android and iOS. On iOS, pass that text to `renderSvg()` and display the returned SVG with `ReceiptPreviewView`. Use the same column count as in the printer profile.
+`receipt.measureText(text)` measures CP932 column widths on both platforms, skipping unencodable characters. `preview()` returns ReceiptLine text on Android and iOS. On either platform, pass that text to `renderSvg()` and display the returned SVG with `ReceiptPreviewView`. Use the same column count as in the printer profile.
 
 ```dart
 import 'package:flutter/widgets.dart';
@@ -89,11 +89,11 @@ Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
 }
 ```
 
-The iOS renderer uses JavaScriptCore with the bundled ReceiptLine 4.0.1 script and license (LF line endings). The preview uses local fonts and disables WebView scripts, external resources and external navigation. SVG rendering is available only on iOS.
+Both platforms render with the bundled ReceiptLine 4.0.1 script. iOS uses JavaScriptCore and Android uses a separate offline WebView. The visible preview uses local fonts and disables scripts, external resources and navigation.
 
 `renderSvg()` preserves CJK compatibility ideographs such as 塚 while composing combining sequences. External renderers may normalize text differently.
 
-`preview()` exports the effective QR cell size after printer settings are applied, up to 8 dots. At 1 or 2 dots it preserves the size and reports `PREVIEW_APPROXIMATION` because standard ReceiptLine 4.0.1 renderers use a minimum of 3. Effective sizes above 8 are exported as 8 with the same warning. The bundled iOS SVG uses the exported size, reducing it only as needed to fit a whole number of dots per module. Rendering fails if the matrix cannot be generated or a one-dot module cannot fit. Printing uses the printer’s effective size.
+`preview()` exports the effective QR cell size after printer settings are applied, up to 8 dots. At 1 or 2 dots it preserves the size and reports `PREVIEW_APPROXIMATION` because standard ReceiptLine 4.0.1 renderers use a minimum of 3. Effective sizes above 8 are exported as 8 with the same warning. The bundled SVG renderer uses the exported size, reducing it only as needed to fit a whole number of dots per module. Rendering fails if the matrix cannot be generated or a one-dot module cannot fit. Printing uses the printer’s effective size.
 
 ## Run the example or build from source
 

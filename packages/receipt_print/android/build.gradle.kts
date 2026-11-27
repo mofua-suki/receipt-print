@@ -44,6 +44,8 @@ android {
     sourceSets {
         getByName("main") {
             java.srcDirs("src/main/kotlin")
+            // Both platforms package the same ReceiptLine source and license.
+            assets.srcDir("../ios/receipt_print/Sources/receipt_print/Resources")
         }
         getByName("test") {
             java.srcDirs("src/test/kotlin")

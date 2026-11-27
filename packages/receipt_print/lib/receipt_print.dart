@@ -26,7 +26,7 @@ final class ReceiptPrint {
     return width;
   }
 
-  /// Renders ReceiptLine to SVG locally on iOS. Does not access a printer or network.
+  /// Renders ReceiptLine to SVG locally on Android and iOS. Does not access a printer or network.
   Future<String> renderSvg(String receiptLine, {required int columns}) async {
     final svg = await _channel.invokeMethod<String>('renderSvg', {
       'protocolVersion': 1,
