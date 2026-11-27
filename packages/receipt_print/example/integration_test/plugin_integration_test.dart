@@ -103,7 +103,10 @@ void main() {
     final job = PrintJobDto(
       tickets: [
         TicketDto(
-          children: [QrCodeDto(data: data), const TextDto(value: '塚田')],
+          children: [
+            QrCodeDto(data: data),
+            const TextDto(value: '塚田'),
+          ],
           cut: CutModeDto.none,
         ),
       ],
