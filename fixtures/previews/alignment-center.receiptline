@@ -1,0 +1,4 @@
+{text:nowrap}
+| ABC |
+| {code:A; option:qrcode,6,m} |
+{text:wrap}

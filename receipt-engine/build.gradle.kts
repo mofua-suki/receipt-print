@@ -11,11 +11,9 @@ plugins {
 
 tasks.withType<Test>().configureEach {
     systemProperty("receipt.fixtures.dir", rootProject.file("fixtures").absolutePath)
-    dependsOn(rootProject.tasks.named("receiptLineNpmInstall"))
-    inputs.files(rootProject.files(
-        "tools/receiptline/verify-alignment.mjs",
-        "tools/receiptline/package-lock.json",
-    ))
+    inputs.files(rootProject.fileTree("fixtures/previews") {
+        include("alignment-*.receiptline")
+    })
 }
 
 kotlin {

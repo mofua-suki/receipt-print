@@ -177,7 +177,6 @@ tasks.register("engineCheck") {
     description = "Runs every conversion-engine check and sample verification."
     dependsOn(
         "coreCheck",
-        "receiptLineSvgCheck",
         ":receipt-engine:checkKotlinAbi",
         ":receipt-engine:jvmTest",
         ":receipt-engine:iosSimulatorArm64Test",
@@ -212,46 +211,6 @@ tasks.register<Exec>("swiftSampleCheck") {
         "-F",
         frameworkDirectory.get().asFile.absolutePath,
         sample.asFile.absolutePath,
-    )
-}
-
-val receiptLineNpmInstall by tasks.registering(Exec::class) {
-    group = "build setup"
-    description = "Installs the pinned ReceiptLine preview dependency when it is not already present."
-    workingDir(layout.projectDirectory.dir("tools/receiptline"))
-    inputs.files(
-        layout.projectDirectory.file("tools/receiptline/package.json"),
-        layout.projectDirectory.file("tools/receiptline/package-lock.json"),
-    )
-    outputs.file(layout.projectDirectory.file("tools/receiptline/node_modules/receiptline/package.json"))
-    commandLine(
-        "npm",
-        "ci",
-        "--include=dev",
-        "--ignore-scripts",
-        "--cache",
-        layout.buildDirectory.dir("npm-cache").get().asFile.absolutePath,
-    )
-}
-
-tasks.register<Exec>("receiptLineSvgCheck") {
-    group = "verification"
-    description = "Regenerates ReceiptLine SVG in memory and compares it with the committed golden."
-    dependsOn(receiptLineNpmInstall)
-    workingDir(layout.projectDirectory.dir("tools/receiptline"))
-    inputs.files(
-        layout.projectDirectory.file("fixtures/previews/core-nodes.receiptline"),
-        layout.projectDirectory.file("fixtures/previews/core-nodes.svg"),
-        layout.projectDirectory.file("tools/receiptline/package-lock.json"),
-        layout.projectDirectory.file("tools/receiptline/receiptline-svg.mjs"),
-        layout.projectDirectory.file("tools/receiptline/verify-svg.mjs"),
-    )
-    commandLine(
-        "node",
-        "verify-svg.mjs",
-        "../../fixtures/previews/core-nodes.receiptline",
-        "../../fixtures/previews/core-nodes.svg",
-        "48",
     )
 }
 

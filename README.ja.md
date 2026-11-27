@@ -47,7 +47,7 @@ PrintJobDto
 
 ## ビルドと検証
 
-JDK 17 以降と、Node.js および npm が必要です。Gradle は開発依存の ReceiptLine を `npm ci --include=dev` でインストールします。この依存は `receipt-engine` の JVM 描画テストと、`./gradlew engineCheck` の SVG Golden 検証で使います。iOS の検証には macOS、Xcode、Apple Silicon Simulator toolchain が必要です。
+JDK 17 以降が必要です。iOS の検証には macOS、Xcode、Apple Silicon Simulator toolchain が必要です。
 
 ```shell
 ./gradlew build
@@ -56,7 +56,14 @@ JDK 17 以降と、Node.js および npm が必要です。Gradle は開発依�
 ./gradlew fullCheck
 ```
 
-`engineCheck` は ABI、JVM / iOS Simulator テスト、プリンターコマンド Fixture、ReceiptLine SVG、Kotlin / Swift サンプルを検証します。
+`engineCheck` は ABI、JVM / iOS Simulator テスト、プリンターコマンド Fixture、ReceiptLine の整列入力、Kotlin / Swift サンプルを検証します。
+
+固定バージョンの JavaScript レンダラーによる SVG 出力と整列の確認は、Node.js を使って別に実行します。
+
+```shell
+npm --prefix tools/receiptline ci --include=dev --ignore-scripts
+npm --prefix tools/receiptline run verify
+```
 
 Maven publication は次のコマンドで `build/maven-repository` へ生成できます。
 
