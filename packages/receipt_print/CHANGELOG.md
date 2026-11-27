@@ -1,3 +1,7 @@
+## 0.1.6
+
+- Ship the example widget test and verify the distributed example after generating its platform files.
+
 ## 0.1.5
 
 - Return an independent command buffer on each read of a Flutter compile result.
