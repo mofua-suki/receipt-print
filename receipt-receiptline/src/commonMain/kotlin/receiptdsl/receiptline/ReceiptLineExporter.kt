@@ -234,8 +234,8 @@ public object DefaultReceiptLineExporter : ReceiptLineExporter {
                 "asymmetric text scale ${style.widthScale}x${style.heightScale}",
                 path,
             )
-            val scale = maxOf(style.widthScale, style.heightScale).coerceIn(2, MAX_PREVIEW_SCALE)
-            "^".repeat(scale + 1)
+            // Double height is the tallest marker that keeps text one column wide.
+            if (style.widthScale == 1) "^^" else "^".repeat(style.widthScale.coerceAtMost(MAX_PREVIEW_SCALE) + 1)
         }
     }
 

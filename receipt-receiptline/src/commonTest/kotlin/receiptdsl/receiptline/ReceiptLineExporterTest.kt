@@ -4,6 +4,7 @@ import kotlinx.collections.immutable.persistentListOf
 import receiptdsl.model.Column
 import receiptdsl.model.CutMode
 import receiptdsl.model.Feed
+import receiptdsl.model.InlineLine
 import receiptdsl.model.JobAction
 import receiptdsl.model.PrintDirection
 import receiptdsl.model.PrintJob
@@ -72,6 +73,36 @@ public class ReceiptLineExporterTest {
             result.markdown,
         )
         assertTrue(result.diagnostics.isEmpty())
+    }
+
+    @Test
+    public fun preservesPrintedWidthForApproximateScales() {
+        val text = "ABCDEFGHIJKLMNOPQ"
+        val tall = TextStyle(widthScale = 1, heightScale = 3)
+        val content = Column(
+            persistentListOf(
+                TextBlock(text, style = tall),
+                InlineLine(
+                    persistentListOf(
+                        TextRun("A", TextStyle(widthScale = 2, heightScale = 1)),
+                        TextRun(text, tall),
+                        TextRun("B", TextStyle(widthScale = 1, heightScale = 2)),
+                        TextRun("C"),
+                    ),
+                ),
+                TextBlock("D", style = TextStyle(widthScale = 2, heightScale = 4)),
+                TextBlock("E", style = TextStyle(widthScale = 8, heightScale = 1)),
+            ),
+        )
+        val job = PrintJob(persistentListOf(Ticket(content, cut = CutMode.None)))
+
+        val result = DefaultReceiptLineExporter.export(job, PreviewProfile(columnsPerLine = 48))
+
+        assertEquals(
+            listOf("{text:nowrap}", "^^$text |", "^A^^${text}B^^C |", "^^^D |", "^^^^^^^E |", "{text:wrap}").joinToString("\n"),
+            result.markdown,
+        )
+        assertEquals(List(4) { "PREVIEW_APPROXIMATION" }, result.diagnostics.map { it.code })
     }
 
     @Test
