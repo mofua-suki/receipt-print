@@ -14,7 +14,7 @@ let package = Package(
                 "ReceiptPrint",
                 .product(name: "FlutterFramework", package: "FlutterFramework")
             ],
-            resources: [.process("Resources")]
+            resources: [.process("Resources"), .process("PrivacyInfo.xcprivacy")]
         )
     ]
 )
