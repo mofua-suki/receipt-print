@@ -9,8 +9,11 @@ import receiptdsl.engine.ReceiptEngine
 
 class ReceiptPrintPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private var channel: MethodChannel? = null
+    @Volatile private var renderer: ReceiptSvgRenderer? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        renderer = ReceiptSvgRenderer(binding.applicationContext)
+        binding.platformViewRegistry.registerViewFactory("receipt_print/preview", ReceiptPreviewFactory())
         channel = MethodChannel(
             binding.binaryMessenger,
             "dev.receiptprint/receipt_print",
@@ -34,7 +37,11 @@ class ReceiptPrintPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 return
             }
             if (call.method == "renderSvg") {
-                result.error("unsupported_platform", "SVG rendering is currently available on iOS", null)
+                val text = arguments["receiptLine"] as? String ?: throw IllegalArgumentException("Expected receiptLine")
+                val columns = arguments["columns"] as? Int ?: throw IllegalArgumentException("Expected columns")
+                require(columns > 0) { "Columns must be greater than zero" }
+                val svgRenderer = renderer ?: throw IllegalStateException("Receipt renderer is detached")
+                svgRenderer.render(text, columns, result)
                 return
             }
             val job = ReceiptChannelCodec.printJob(arguments["job"])
@@ -63,5 +70,7 @@ class ReceiptPrintPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel?.setMethodCallHandler(null)
         channel = null
+        renderer?.close()
+        renderer = null
     }
 }

@@ -165,7 +165,7 @@ xcodebuild test -project Runner.xcodeproj -scheme Runner \
 ## 紙面プレビュー
 
 `receipt.measureText(text)` は Android と iOS で互換モードと同じ CP932 の桁数を返します。CP932 で表現できない文字は数えません。
-印刷と同じ `job` と `printer` を使い、iOS で次のように紙面を表示できます。
+印刷と同じ `job` と `printer` を使い、Android と iOS で次のように紙面を表示できます。
 
 ```dart
 import 'package:flutter/widgets.dart';
@@ -181,12 +181,12 @@ Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
 }
 ```
 
-SVG は iOS の JavaScriptCore で生成します。ReceiptLine 4.0.1 の `lib/receiptline.js` は改行を LF にそろえ、付属のライセンスとともに同梱しています。
-プレビューではローカルのフォントを使います。WebView のスクリプト、外部リソース、外部への遷移は無効です。Android では SVG 描画を利用できません。
+SVG は iOS の JavaScriptCore または Android のオフライン描画用 WebView で生成します。ReceiptLine 4.0.1 の `lib/receiptline.js` は改行を LF にそろえ、付属のライセンスとともに同梱しています。
+プレビューではローカルのフォントを使います。表示用 WebView のスクリプト、外部リソース、外部への遷移は無効です。
 
 `renderSvg()` は「塚」などのCJK互換漢字を保持し、結合文字列にはNFCを適用します。外部描画器では正規化の違いで字形が変わる場合があります。
 
-`preview()` は印刷設定を適用した後のQRセル幅を、最大8ドットで出力します。1・2ドットはそのまま出力しますが、標準のReceiptLine 4.0.1描画器では最小3ドットになるため、`PREVIEW_APPROXIMATION` を返します。実効幅が8を超える場合は8に丸め、同じ警告を返します。同梱のiOS SVGは出力されたセル幅で描画し、収まらない場合だけ整数ドット単位で縮小します。行列を生成できない場合や1ドットでも収まらない場合は描画エラーになります。印刷には印刷設定の実効幅を使います。
+`preview()` は印刷設定を適用した後のQRセル幅を、最大8ドットで出力します。1・2ドットはそのまま出力しますが、標準のReceiptLine 4.0.1描画器では最小3ドットになるため、`PREVIEW_APPROXIMATION` を返します。実効幅が8を超える場合は8に丸め、同じ警告を返します。同梱のSVG描画器は出力されたセル幅で描画し、収まらない場合だけ整数ドット単位で縮小します。行列を生成できない場合や1ドットでも収まらない場合は描画エラーになります。印刷には印刷設定の実効幅を使います。
 
 `InlineLineDto` は、各 `TextRunDto` を暗黙の余白なしで並べる整形済みの一行です。
 各区間のスタイルと入力済みの余白を保持し、自動で折り返しません。区間に改行は指定できません。

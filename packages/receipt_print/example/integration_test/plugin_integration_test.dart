@@ -61,19 +61,6 @@ void main() {
     expect(receiptLine, contains('`\\x201点\\x20'));
     expect(receiptLine, contains('{code:order-42;'));
 
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      await expectLater(
-        engine.renderSvg(receiptLine, columns: samplePrinter.columnsPerLine),
-        throwsA(
-          isA<PlatformException>().having(
-            (error) => error.code,
-            'code',
-            'unsupported_platform',
-          ),
-        ),
-      );
-      return;
-    }
     final svg = await engine.renderSvg(
       receiptLine,
       columns: samplePrinter.columnsPerLine,
@@ -89,7 +76,13 @@ void main() {
         child: SizedBox(height: 320, child: ReceiptPreviewView(svg: svg)),
       ),
     );
-    expect(find.byType(UiKitView), findsOneWidget);
+    final viewType = defaultTargetPlatform == TargetPlatform.android
+        ? AndroidView
+        : UiKitView;
+    expect(find.byType(viewType), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('name forms and QR cell sizes survive preview export', (
@@ -122,7 +115,6 @@ void main() {
     expect(text, contains('| {code:$data; option:qrcode,6,m} |'));
     expect(text, contains('塚田'));
 
-    if (defaultTargetPlatform != TargetPlatform.iOS) return;
     final svg = await engine.renderSvg(text, columns: 32);
     expect(svg, contains('>塚</tspan>'));
     expect(svg, contains('>田</tspan>'));
@@ -146,7 +138,7 @@ void main() {
     );
   });
 
-  testWidgets('small QR cells survive compilation, export and iOS rendering', (
+  testWidgets('small QR cells survive compilation, export and SVG rendering', (
     tester,
   ) async {
     const printer = PrinterProfileDto(model: PrinterModelDto.epsonTmM30);
@@ -171,10 +163,8 @@ void main() {
         preview.diagnostics.map((d) => d.code),
         contains('PREVIEW_APPROXIMATION'),
       );
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        final svg = await engine.renderSvg(text, columns: 48);
-        expect(svg, contains('<path d="M0,0l$cell,0 0,$cell'));
-      }
+      final svg = await engine.renderSvg(text, columns: 48);
+      expect(svg, contains('<path d="M0,0l$cell,0 0,$cell'));
     }
   });
 

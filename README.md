@@ -72,7 +72,7 @@ The required checks for merging into `main` are `engine-and-ios` on the project'
 
 ## Flutter
 
-Run `flutter pub add receipt_print` in your app. The [Flutter package README](packages/receipt_print/README.md) covers installation, native artifacts and platform requirements. iOS apps can display a [receipt preview](packages/receipt_print/README.md#receipt-preview). Kotlin and Swift apps can use `ReceiptEngine` directly.
+Run `flutter pub add receipt_print` in your app. The [Flutter package README](packages/receipt_print/README.md) covers installation, native artifacts and platform requirements. Android and iOS apps can display a [receipt preview](packages/receipt_print/README.md#receipt-preview). Kotlin and Swift apps can use `ReceiptEngine` directly.
 
 ## Build a versioned distribution
 
