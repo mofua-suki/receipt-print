@@ -1,10 +1,10 @@
 # Receipt Print
 
-[Japanese documentation](https://github.com/mofua-suki/receipt-print/blob/main/packages/receipt_print/README.ja.md)
+[日本語](https://github.com/mofua-suki/receipt-print/blob/main/packages/receipt_print/README.ja.md) · [pub.dev](https://pub.dev/packages/receipt_print)
 
 Receipt Print converts a structured receipt into printer commands or a ReceiptLine preview. It runs the Kotlin Multiplatform receipt engine on Android and iOS. Your app supplies the receipt data and handles printer connections, sending bytes, and retries.
 
-## Install
+## Installation
 
 ```shell
 flutter pub add receipt_print
@@ -17,7 +17,9 @@ The pub.dev package includes the Maven artifacts for Android and an XCFramework 
 | Android | API 24 or later, JDK 17 or later, and Kotlin 2.4.10 or later |
 | iOS | iOS 15 or later on arm64 devices or Apple Silicon simulators |
 
-Use Flutter 3.44.5 or later with Dart 3.12.2 or later. For iOS, set the app's minimum deployment target to 15.0. If using CocoaPods, also set `platform :ios, '15.0'` in your Podfile.
+Use Flutter 3.44.5 or later with Dart `>=3.12.2 <4.0.0`. For iOS, set the app's minimum deployment target to 15.0. If using CocoaPods, also set `platform :ios, '15.0'` in your Podfile.
+
+The example uses Flutter 3.44.5, AGP 9.0.1 and Kotlin 2.4.10. iOS integration supports CocoaPods and Swift Package Manager. Web, desktop and Intel iOS simulators are unsupported.
 
 ## Generate commands and a preview
 
@@ -35,6 +37,7 @@ Future<void> compileReceipt() async {
           trailing: TextRunDto(value: '2'),
         ),
         RuleDto(),
+        QrCodeDto(data: 'https://example.com/order/12'),
         FeedDto(),
       ]),
     ],
@@ -55,30 +58,85 @@ Future<void> compileReceipt() async {
 }
 ```
 
+Use `ColumnDto` to nest nodes. Child lists use Dart's `List<PrintNodeDto>`. DTO fields and defaults correspond to KMP, including the signed 32-bit range for integer inputs. `InlineLineDto` joins styled runs on one preformatted line. It preserves explicit spacing, adds no padding, does not wrap and disallows newlines within runs.
+
 Both calls can return output alongside warnings. If receipt validation fails, the output is null. Use `ticketIndex` and `childIndexes` to find the affected node. Invalid platform-channel calls can throw a `PlatformException`.
 
 The supported models are Epson TM-m30 and TM-T90KP, Star FVP10, TSP650II and mC-Print3, and Seiko Instruments RP-F10. Set `columnsPerLine` to the width for the chosen printer and paper. The engine uses CP932 column widths. On a TM-m30, set `optionalExternalBuzzerEnabled` only if a compatible external buzzer is configured.
 
+The Dart API sends models over a MethodChannel to Kotlin or Swift. The native engine handles validation, layout and conversion. Native apps can use the KMP artifacts or XCFramework directly.
+
 ## Receipt preview
 
-`preview()` returns ReceiptLine text on Android and iOS. On iOS, pass that text to `renderSvg()` and display the returned SVG with `ReceiptPreviewView`. Use the same column count as in the printer profile.
+`receipt.measureText(text)` measures CP932 column widths on both platforms, skipping unencodable characters. `preview()` returns ReceiptLine text on Android and iOS. On iOS, pass that text to `renderSvg()` and display the returned SVG with `ReceiptPreviewView`. Use the same column count as in the printer profile.
 
 ```dart
-final text = preview.receiptLine;
-if (text != null) {
+import 'package:flutter/widgets.dart';
+import 'package:receipt_print/receipt_print.dart';
+
+Future<Widget?> buildPreview(PrintJobDto job, PrinterProfileDto printer) async {
+  final receipt = ReceiptPrint();
+  final preview = await receipt.preview(job: job, printer: printer);
+  final text = preview.receiptLine;
+  if (text == null) return null;
   final svg = await receipt.renderSvg(text, columns: printer.columnsPerLine);
-  final view = ReceiptPreviewView(svg: svg);
-  // Return view from your widget or insert it in your layout.
+  return SizedBox(height: 320, child: ReceiptPreviewView(svg: svg));
 }
 ```
+
+The iOS renderer uses JavaScriptCore with the bundled ReceiptLine 4.0.1 script and license (LF line endings). The preview uses local fonts and disables WebView scripts, external resources and external navigation. SVG rendering is available only on iOS.
 
 ## Run the example or build from source
 
 See the [example](https://github.com/mofua-suki/receipt-print/tree/main/packages/receipt_print/example) for a Flutter app that compiles a receipt and displays its command length, ReceiptLine output, and diagnostics.
 
-When using a Git checkout, run `./gradlew prepareFlutterPlugin` from the repository root to build the native artifacts. iOS builds need macOS and Xcode. Use `prepareFlutterAndroid` or `prepareFlutterIos` to build only one platform. Add `packages/receipt_print` as a Flutter path dependency.
+When using a Git checkout, run `./gradlew prepareFlutterPlugin` from the repository root to build the native artifacts. iOS builds need macOS and Xcode. Use `prepareFlutterAndroid` or `prepareFlutterIos` to build only one platform. The generated Maven repository and XCFramework are excluded from Git. Rebuild them after changing KMP code. Android and KMP share the version in `engine-version.txt`. Bump it when changing native engine artifacts. Use `./gradlew bundleFlutterPlugin` for a ZIP in `build/distributions`. CI retains the ZIP for the verified commit.
 
-If your Android project uses `FAIL_ON_PROJECT_REPOS`, add the plugin's `android/maven` directory to `dependencyResolutionManagement.repositories` in `settings.gradle.kts`. Set `receiptPrintConfigureRepositories=false` in the app's `gradle.properties` to disable automatic registration.
+Add the path relative to the consuming app's `pubspec.yaml`, then run `flutter pub get`. Git dependencies also require native artifacts in the checkout.
+
+```yaml
+dependencies:
+  receipt_print:
+    path: ../receipt-print/packages/receipt_print
+```
+
+If your Android project uses `FAIL_ON_PROJECT_REPOS`, add the plugin's `android/maven` directory to `dependencyResolutionManagement.repositories` in `settings.gradle.kts`. Set `receiptPrintConfigureRepositories=false` in the app's `gradle.properties` to disable automatic registration. This repository supplies the `receipt-kmp` group.
+
+## Verify a source checkout
+
+Prepare the native artifacts, then run the package and example checks from `packages/receipt_print`.
+
+```shell
+flutter pub get
+flutter analyze
+flutter test
+cd example
+flutter test
+flutter build apk --debug
+cd android
+./gradlew :receipt_print:testDebugUnitTest
+```
+
+Run the MethodChannel integration test from the repository root on an iOS simulator, Android device or Android emulator.
+
+```shell
+cd packages/receipt_print/example
+flutter devices
+# Set DEVICE_ID to the device identifier shown above.
+flutter test integration_test/plugin_integration_test.dart -d "$DEVICE_ID"
+```
+
+From the example directory, restore the normal app configuration after the integration test and run the iOS DTO and invalid-argument tests.
+
+```shell
+flutter build ios --simulator --debug --config-only
+cd ios
+xcodebuild test -project Runner.xcodeproj -scheme Runner \
+  -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+  -parallel-testing-enabled NO -only-testing:RunnerTests
+```
+
+Run `flutter run` from the example directory to launch the app.
 
 ## License
 
