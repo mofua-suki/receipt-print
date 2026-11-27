@@ -14,7 +14,7 @@ The pub.dev package includes the Maven artifacts for Android and an XCFramework 
 
 | Platform | Requirements |
 | --- | --- |
-| Android | API 24 or later, JDK 17 or later, and Kotlin 2.4.10 or later |
+| Android | Devices with API 24 or later. Build with Android SDK Platform 36 installed, JDK 17 or later, and Kotlin 2.4.10 or later. |
 | iOS | iOS 15 or later on arm64 devices or Apple Silicon simulators |
 
 Use Flutter 3.44.5 or later with Dart `>=3.12.2 <4.0.0`. For iOS, set the app's minimum deployment target to 15.0. If using CocoaPods, also set `platform :ios, '15.0'` in your Podfile.
