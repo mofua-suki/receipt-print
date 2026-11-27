@@ -227,6 +227,7 @@ val receiptLineNpmInstall by tasks.registering(Exec::class) {
     commandLine(
         "npm",
         "ci",
+        "--include=dev",
         "--ignore-scripts",
         "--cache",
         layout.buildDirectory.dir("npm-cache").get().asFile.absolutePath,
